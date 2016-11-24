@@ -1,0 +1,23 @@
+{
+  "id": 0,
+  "name": "测试算法1",
+  "category": 0,
+  "inputs": [
+    {
+      "name": "data_set",
+      "optional": false
+    }
+  ],
+  "outputs": [
+    {
+      "name": "class_center"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "max class",
+      "val_type": "int",
+      "val": 2
+    }
+  ]
+}

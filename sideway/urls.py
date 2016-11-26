@@ -2,9 +2,7 @@ from django.conf.urls import url
 
 from . import views
 
-
-app_name = 'dispatcher'
-
+app_name = 'sideway'
 
 urlpatterns = [
 

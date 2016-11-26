@@ -1,0 +1,28 @@
+{
+  "name": "workflow_name",
+  "processors": [
+    {
+      "id": 1,
+      "flowID": 1,
+      "parameters": {
+        "host": "10.5.0.224",
+        "port": "3306",
+        "user": "root",
+        "password": "asd123"
+      }
+    },
+    {
+      "id": 2,
+      "flowID": 2,
+      "parameters": {
+        "shared": "2"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "from": "1>1",
+      "to": "2<1"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+[
+  {
+    "id": 1,
+    "name": "test1",
+    "params": [
+      {
+        "id": 2,
+        "parameterType": "selection",
+        "label": "label2",
+        "hint": "hint2",
+        "value": "",
+        "choices": [
+          "A",
+          "B",
+          "C"
+        ]
+      }
+    ],
+    "inputs": [
+      {
+        "id": 1
+      }
+    ],
+    "outputs": [
+      {
+        "id": 1
+      },
+      {
+        "id": 2
+      }
+    ]
+  }
+]

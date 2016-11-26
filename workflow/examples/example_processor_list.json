@@ -1,0 +1,43 @@
+[
+  {
+    "inputs": [
+      {
+        "id": 1
+      }
+    ],
+    "output": [
+      {
+        "id": 1
+      }
+    ],
+    "params": [
+      {
+        "parameterType": "text",
+        "hint": "hint",
+        "optional": true,
+        "value": "",
+        "label": "label"
+      },
+      {
+        "parameterType": "selection",
+        "hint": "select",
+        "choice": [
+          "A",
+          "B"
+        ],
+        "optional": true,
+        "value": "",
+        "label": "selection"
+      },
+      {
+        "parameterType": "text",
+        "hint": "",
+        "optional": true,
+        "value": "",
+        "label": "something"
+      }
+    ],
+    "id": 1,
+    "name": "test1"
+  }
+]

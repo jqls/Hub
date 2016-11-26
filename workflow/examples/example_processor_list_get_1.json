@@ -1,0 +1,31 @@
+[
+  {
+    "inputs": [],
+    "output": [],
+    "params": [
+      {
+        "parameterType": "text",
+        "hint": "",
+        "optional": true,
+        "id": 1,
+        "value": "",
+        "label": "label1"
+      },
+      {
+        "parameterType": "selection",
+        "hint": "",
+        "choice": [
+          "A",
+          "B",
+          "C"
+        ],
+        "optional": true,
+        "id": 2,
+        "value": "",
+        "label": "whatever"
+      }
+    ],
+    "id": 1,
+    "name": ""
+  }
+]

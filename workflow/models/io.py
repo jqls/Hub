@@ -1,30 +1,43 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-from parameter import Parameter
-from processor import Processor
-from basic import DataType
+from basic import DataType, BasicModel
 
 
-class Stream(models.Model):
-    data_type = models.ForeignKey(DataType)
-    processor = models.ForeignKey(Processor)
+class Channel(BasicModel):
+    data_type = models.ForeignKey('DataType')
 
     class Meta:
         abstract = True
 
 
-class Input(Stream):
-    parameters = GenericRelation(Parameter)
+class InputChannel(Channel):
+    processor = models.ForeignKey('Processor', related_name='inputs')
+
+    @classmethod
+    def create_from_json_dict(cls, attributes, **kwargs):
+        assert 'processor' in kwargs.keys()
+        processor = kwargs['processor']
+        data_type = DataType.objects.get(pk=attributes['dataType'])
+        channel = cls(data_type=data_type, processor=processor)
+        channel.save()
+        return channel
+
+    def to_dict(self):
+        return {"id": self.pk}
 
 
-class Output(Stream):
-    parameters = GenericRelation(Parameter)
+class OutputChannel(Channel):
+    processor = models.ForeignKey('Processor', related_name='outputs')
 
+    @classmethod
+    def create_from_json_dict(cls, attributes, **kwargs):
+        assert 'processor' in kwargs.keys()
+        processor = kwargs['processor']
+        data_type = DataType.objects.get(pk=attributes['dataType'])
+        channel = cls(data_type=data_type, processor=processor)
+        channel.save()
+        return channel
 
-class ConfiguredInput(models.Model):
-    meta_input = models.ForeignKey('Input')
-
-
-class ConfiguredOutput(models.Model):
-    meta_output = models.ForeignKey('Output')
+    def to_dict(self):
+        return {"id": self.pk}

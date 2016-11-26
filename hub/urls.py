@@ -20,4 +20,5 @@ urlpatterns = [
     url(r'^grappelli/', include('grappelli.urls')),  # grappelli URLS
     url(r'^admin/', admin.site.urls),
     url(r'^dispatcher/', include('dispatcher.urls')),
+    url(r'^workflow/', include('workflow.urls')),
 ]

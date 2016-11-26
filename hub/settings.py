@@ -38,9 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
-    # 'rest_framework',
     'dispatcher',
     'workflow',
+    # 'sideway',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -84,7 +84,7 @@ DATABASES = {
         'NAME': 'dispatcher_dev',
         'USER': 'root',
         'PASSWORD': 'asd123',
-        'HOST': '127.0.0.1',
+        'HOST': '192.168.99.100',
         'PORT': '3306'
     }
 }

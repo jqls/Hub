@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 import inspect
-
 import sys
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -131,14 +130,29 @@ class Parameter(BasicModel):
             result.update(self.parameter_input_object.to_dict())
         return result
 
+    def configure(self, workflow, value):
+        # todo: 需要进行参数检查，设置值限制
+        configured_parameter = ConfiguredParameter(
+            meta_parameter=self, label=self.label, val=value, workflow=workflow
+        )
+        configured_parameter.save()
+        return configured_parameter
+
     class Meta:
-        unique_together = ('content_type', 'object_id')
+        unique_together = (('content_type', 'object_id'), ('label', 'processor'))
 
 
 class ConfiguredParameter(BasicModel):
     meta_parameter = models.ForeignKey('Parameter')
+    label = models.CharField(max_length=30, default="")
     val = models.CharField(max_length=200)
-    processor = models.ForeignKey('ConfiguredParameter', related_name='parameters')
+    workflow = models.ForeignKey('Workflow', related_name='parameters')
+
+    def to_dict(self):
+        return {
+            'processor_id': self.meta_parameter.processor.pk,
+            self.label: self.val
+        }
 
 
 class ProcessorCategory(BasicModel):

@@ -11,10 +11,6 @@ from io import InputChannel, OutputChannel
 class Processor(BasicModel):
     name = models.CharField(max_length=140)
     exec_file = models.FileField(upload_to='exec_files', null=True)
-    params = GenericRelation('Parameter')
-
-    def configure(self, workflow):
-        pass
 
     def to_dict(self):
         # todo：这里可以使用Magic

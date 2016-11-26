@@ -1,4 +1,3 @@
-from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 from basic import DataType, BasicModel
@@ -24,7 +23,10 @@ class InputChannel(Channel):
         return channel
 
     def to_dict(self):
-        return {"id": self.pk}
+        return {
+            'id': self.pk,
+            'processor_id': self.processor.id,
+        }
 
 
 class OutputChannel(Channel):
@@ -40,4 +42,7 @@ class OutputChannel(Channel):
         return channel
 
     def to_dict(self):
-        return {"id": self.pk}
+        return {
+            "id": self.pk,
+            'processor_id': self.processor.id,
+        }

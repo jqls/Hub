@@ -9,7 +9,7 @@ from django.db import models
 from basic import BasicModel
 
 
-# todo: 并不知道这个Magic会不会很影响性能，不顾目前能用就好
+# todo: 并不知道这个Magic会不会很影响性能，目前能用就好
 def valid_parameters():
     parameters_types = {}
     current_modules = sys.modules[__name__]

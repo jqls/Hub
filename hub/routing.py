@@ -1,6 +1,5 @@
-from channels.routing import route, route_class
-
+from channels.routing import route
 
 channel_routing = [
-    route_class('dispatcher.consumers.LogConsumer', path='^/log/')
+    route('submit_mission', 'dispatcher.consumers.submit_mission'),
 ]

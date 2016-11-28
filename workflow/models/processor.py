@@ -1,7 +1,6 @@
 # coding=utf-8
 import json
 
-from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from basic import BasicModel
 from parameter import Parameter

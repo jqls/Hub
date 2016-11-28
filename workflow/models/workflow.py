@@ -9,13 +9,10 @@ class Connection(BasicModel):
     input = models.ForeignKey('InputChannel')
     output = models.ForeignKey('OutputChannel')
     workflow = models.ForeignKey('Workflow', related_name='connections')
-    import uuid as uid
-    uuid = models.UUIDField(auto_created=True, default=uid.uuid4)
 
     def to_dict(self):
         return {
             'id': self.pk,
-            'uuid': self.uuid.hex,
             'input': self.input.to_dict(),
             'output': self.output.to_dict(),
         }

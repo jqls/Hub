@@ -1,14 +1,10 @@
-from channels.generic.websockets import WebsocketConsumer
+import time
+import logging
+
+logger = logging.getLogger('django')
 
 
-class LogConsumer(WebsocketConsumer):
-    http_user = True
-
-    def connect(self, message, **kwargs):
-        super(LogConsumer, self).connect(message, **kwargs)
-
-    def receive(self, text=None, bytes=None, **kwargs):
-        super(LogConsumer, self).receive(text, bytes, **kwargs)
-
-    def disconnect(self, message, **kwargs):
-        super(LogConsumer, self).disconnect(message, **kwargs)
+def submit_mission(message):
+    for i in range(10):
+        logger.info('submit mission %d', i)
+        time.sleep(1)

@@ -130,10 +130,14 @@ class Parameter(BasicModel):
             result.update(self.parameter_input_object.to_dict())
         return result
 
-    def configure(self, workflow, value):
+    def configure(self, workflow, value, configure_processor):
         # todo: 需要进行参数检查，设置值限制
         configured_parameter = ConfiguredParameter(
-            meta_parameter=self, label=self.label, val=value, workflow=workflow
+            meta_parameter=self,
+            label=self.label,
+            val=value,
+            workflow=workflow,
+            configured_processor=configure_processor,
         )
         configured_parameter.save()
         return configured_parameter
@@ -146,12 +150,15 @@ class ConfiguredParameter(BasicModel):
     meta_parameter = models.ForeignKey('Parameter')
     label = models.CharField(max_length=30, default="")
     val = models.CharField(max_length=200)
+    configured_processor = models.ForeignKey('ConfiguredProcessor', related_name='parameters')
     workflow = models.ForeignKey('Workflow', related_name='parameters')
 
     def to_dict(self):
         return {
-            'processor_id': self.meta_parameter.processor.pk,
-            self.label: self.val
+            'processor_id': self.configured_processor.meta_processor.pk,
+            'flow_id': self.configured_processor.pk,
+            'label': self.label,
+            'val': self.val,
         }
 
 

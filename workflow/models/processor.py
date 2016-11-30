@@ -44,12 +44,17 @@ class Processor(BasicModel):
 
 
 class ConfiguredProcessor(BasicModel):
-    uuid = models.UUIDField(auto_created=True)
     meta_processor = models.ForeignKey('Processor')
-    workflow = models.ForeignKey('Workflow')
+    workflow = models.ForeignKey('Workflow', related_name='processors')
+    flow_id = models.CharField(max_length=30, default=0)
 
     def to_json(self):
         return json.dumps(self.to_dict())
 
     def to_dict(self):
-        return {}
+        return {
+            'id': self.meta_processor.id,
+            'flow_id': self.flow_id,
+            'inputs': [input_channel.id for input_channel in self.meta_processor.inputs.all()],
+            'outputs': [output_channel.id for output_channel in self.meta_processor.outputs.all()],
+        }

@@ -57,6 +57,7 @@ class PostWorkflowTestCase(TestCase):
             'processors': [
                 {
                     'id': proocessor1_id,
+                    'flow_id': 1,
                     'parameters': {
                         'parameter_a': 'counter',
                         'parameter_b': 'C',
@@ -64,6 +65,7 @@ class PostWorkflowTestCase(TestCase):
                 },
                 {
                     'id': processor2_id,
+                    'flow_id': 2,
                     'parameters': {
                         'parameter_c': 'counter',
                     }
@@ -72,11 +74,13 @@ class PostWorkflowTestCase(TestCase):
             'connections': [
                 {
                     'from': {
-                        'processor_id': proocessor1_id,
+                        'flow_id': 1,
+                        'processor_id': 1,
                         'id': 1,
                     },
                     'to': {
-                        'processor_id': processor2_id,
+                        'processor_id': 2,
+                        'flow_id': 2,
                         'id': 2,
                     },
                 }
@@ -152,7 +156,6 @@ class PostWorkflowTestCase(TestCase):
         post_new_workflow(self, self.get_workflow_json_info(1, 2, self.data_type_id))
         response = self.client.get(reverse('workflow:workflow'))
         print response.content
-
 
 # class PostProcessorTestCase(TestCase):
 #     def get_json_info(self, data_type_id):

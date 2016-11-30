@@ -170,5 +170,5 @@ LOGGING = {
     },
 }
 
-CELERY_BROKER_URL = 'amqp://ttaanngg:dde-zHA-P6H-e47@192.168.99.100:5672//'
+CELERY_BROKER_URL = 'amqp://admin:asd123@10.5.0.224:5672//'
 

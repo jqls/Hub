@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 
 from workflow.models.processor import Processor
 from workflow.models.workflow import Workflow
-
+from django.views.decorators.csrf import csrf_exempt
 
 def generic_get(request, model_cls):
     # todo: need pagination option
@@ -17,6 +17,7 @@ def generic_get(request, model_cls):
         result = result.to_dict()
     else:
         result = [model_cls.to_dict() for model_cls in model_cls.objects.all()]
+
     return HttpResponse(content=json.dumps(result), content_type='application/json')
 
 
@@ -32,7 +33,7 @@ def workflow_rest(request):
         return generic_get(request, Workflow)
     return HttpResponseNotFound(content='not found')
 
-
+@csrf_exempt
 def processor_rest(request):
     if request.method == "GET":
         return generic_get(request, Processor)
@@ -43,6 +44,7 @@ def processor_rest(request):
             attributes['execFile'] = request.FILES['execFile']
             Processor.create_from_json_dict(attributes)
         except Exception, e:
+            print e.message
             return HttpResponseBadRequest(e.message)
         return HttpResponse()
     return HttpResponseNotFound()

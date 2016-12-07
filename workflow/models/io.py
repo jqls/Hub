@@ -12,6 +12,7 @@ class Channel(BasicModel):
 
 class InputChannel(Channel):
     processor = models.ForeignKey('Processor', related_name='inputs')
+    name = models.CharField(max_length=30)
 
     @classmethod
     def create_from_json_dict(cls, attributes, **kwargs):
@@ -29,8 +30,13 @@ class InputChannel(Channel):
         }
 
 
+    class Meta:
+        unique_together = ('processor', 'name')
+
+
 class OutputChannel(Channel):
     processor = models.ForeignKey('Processor', related_name='outputs')
+    name = models.CharField(max_length=30)
 
     @classmethod
     def create_from_json_dict(cls, attributes, **kwargs):
@@ -46,3 +52,6 @@ class OutputChannel(Channel):
             "id": self.pk,
             'processor_id': self.processor.id,
         }
+
+    class Meta:
+        unique_together = ('processor', 'name')

@@ -27,7 +27,7 @@ SECRET_KEY = 'eeoco_(x+7e*#0c@8nkzrd#9_!0*z&djerx54jw$k305ssblg$'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -86,7 +87,7 @@ DATABASES = {
         'NAME': 'dispatcher_dev',
         'USER': 'root',
         'PASSWORD': 'asd123',
-        'HOST': '192.168.99.100',
+        'HOST': '10.5.0.224',
         'PORT': '3306'
     }
 }
@@ -134,8 +135,8 @@ CHANNEL_LAYERS = {
         "BACKEND": "asgi_redis.RedisChannelLayer",
         "CONFIG": {
             "hosts": [
-                # ("10.5.0.224", 6379),
-                ("192.168.99.100", 6379),
+                ("10.5.0.224", 6379),
+                #("192.168.99.100", 6379),
             ]
         },
         "ROUTING": "hub.routing.channel_routing",
@@ -172,3 +173,4 @@ LOGGING = {
 
 CELERY_BROKER_URL = 'amqp://admin:asd123@10.5.0.224:5672//'
 
+CORS_ORIGIN_ALLOW_ALL = True

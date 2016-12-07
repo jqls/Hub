@@ -121,10 +121,14 @@ class Parameter(BasicModel):
     def to_dict(self):
         result = {
             'id': self.pk,
+            'key': self.label,
             'label': self.label,
             'hint': self.hint,
+            'description': self.hint,
             'value': self.value,
+            'required': self.optional,
             'optional': self.optional,
+            'controlType': self.parameter_input_object.parameter_type,
         }
         if self.parameter_input_object is not None:
             result.update(self.parameter_input_object.to_dict())
@@ -162,10 +166,3 @@ class ConfiguredParameter(BasicModel):
         }
 
 
-class ProcessorCategory(BasicModel):
-    name = models.CharField(max_length=100, verbose_name=u'名称')
-    description = models.TextField(verbose_name=u'简介')
-    icon = models.CharField(max_length=20, verbose_name=u'图标名称')
-
-    def __unicode__(self):
-        return u'%s' % self.name

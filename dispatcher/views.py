@@ -36,6 +36,23 @@ def submit_mission_view(request):
         dict['message'] = info
     return HttpResponse(json.dumps(dict))
 
+def get_parameters_view(request, parameter):
+    info = {}
+    try:
+        if request.method == 'GET':
+            paras = parameter.split('-')
+            workflow_id, mission_id, processor_id = paras[0], paras[1], paras[2]
+            workflow_info = Workflow.objects.get(id=int(workflow_id)).to_dict()
+
+            for processor in workflow_info['processors']:
+                if processor['id'] == int(processor_id):
+                    info = processor['parameters']
+    except:
+        import sys
+        info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
+
+    return HttpResponse(json.dumps(info))
+
 def get_inputs_view(request, parameter):
     info = []
     try:

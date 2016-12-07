@@ -20,7 +20,7 @@ def generic_get(request, model_cls):
 
     return HttpResponse(content=json.dumps(result), content_type='application/json')
 
-
+@csrf_exempt
 def workflow_rest(request):
     if request.method == 'POST':
         try:
@@ -48,3 +48,21 @@ def processor_rest(request):
             return HttpResponseBadRequest(e.message)
         return HttpResponse()
     return HttpResponseNotFound()
+
+
+def processor_category_rest(request):
+    if request.method == "GET":
+        with open('/home/spark/Category.txt', 'r') as f:
+            info = f.read()
+            HttpResponse(content=json.dumps(info), content_type='application/json')
+
+    elif request.method == "POST":
+        try:
+            with open('/home/spark/Category.txt', 'w') as f:
+                f.write(json.loads(request.POST['info']))
+        except Exception, e:
+            print e.message
+            return HttpResponseBadRequest(e.message)
+        return HttpResponse()
+    return  HttpResponseNotFound()
+

@@ -1,6 +1,7 @@
 from channels.routing import route
+from dispatcher.consumers import processor_runner, submit_mission
 
 channel_routing = [
-    route('submit_mission', 'dispatcher.consumers.submit_mission'),
-    route('processor_runner', 'dispatcher.consumers.processor_runner'),
+    route('websocket.submit_mission', submit_mission),
+    route('websocket.processor_runner', processor_runner),
 ]

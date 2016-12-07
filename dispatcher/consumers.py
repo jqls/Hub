@@ -64,6 +64,9 @@ def processor_runner(message):
         if not line:
             break
         print line
+        message.reply_channel.send({
+            "text":line
+        })
     proc.wait()
 
     mot = monitor.SparkMonitor('10.5.0.223', '8088')

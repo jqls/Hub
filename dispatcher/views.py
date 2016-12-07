@@ -7,6 +7,7 @@ from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
 from models import Mission, Workflow, ProcesserOutputs, ConfiguredProcesserIO, ProcesserInputs
 from datetime import datetime
+from django.views.decorators.csrf import csrf_exempt
 
 def byteify(input):
     if isinstance(input, dict):
@@ -18,14 +19,15 @@ def byteify(input):
     else:
         return input
 
+@csrf_exempt
 def submit_mission_view(request):
     dict = {}
     info = ''
     try:
         if request.method == 'POST':
             startdate = datetime.now()
-            mission = Mission(status=0, missionStartDate=startdate,
-                              missionEndDate=datetime.now(),workflow=Workflow.objects.get(id=str(request.POST["workflow_id"])))
+            mission = Mission(status=0, startDate=startdate,
+                            endDate=datetime.now(),workflow=Workflow.objects.get(id=str(request.POST["workflow_id"])))
             mission.save()
             missionId = str(Mission.objects.get(startDate=startdate).id)
             Channel('submit_mission').send({'workflow_id':request.POST["workflow_id"], 'mission_id': missionId})
@@ -36,6 +38,7 @@ def submit_mission_view(request):
         dict['message'] = info
     return HttpResponse(json.dumps(dict))
 
+@csrf_exempt
 def get_parameters_view(request, parameter):
     info = {}
     try:
@@ -53,6 +56,7 @@ def get_parameters_view(request, parameter):
 
     return HttpResponse(json.dumps(info))
 
+@csrf_exempt
 def get_inputs_view(request, parameter):
     info = []
     try:
@@ -77,6 +81,7 @@ def get_inputs_view(request, parameter):
 
     return HttpResponse(json.dumps(info))
 
+@csrf_exempt
 def emit_outputs_view(request, parameter):
     dict = {}
     info = []

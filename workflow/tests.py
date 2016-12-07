@@ -50,124 +50,53 @@ def post_new_workflow(test_case, attributes_json):
         content_type='application/json')(json.dumps(attributes_json))
 
 
-class PostWorkflowTestCase(TestCase):
-    def get_workflow_json_info(self, proocessor1_id, processor2_id, data_type_id):
-        return {
-            'name': 'simple_workflow_post_test',
-            'processors': [
-                {
-                    'id': proocessor1_id,
-                    'flow_id': 1,
-                    'parameters': {
-                        'parameter_a': 'counter',
-                        'parameter_b': 'C',
-                    },
-                },
-                {
-                    'id': processor2_id,
-                    'flow_id': 2,
-                    'parameters': {
-                        'parameter_c': 'counter',
-                    }
-                }
-            ],
-            'connections': [
-                {
-                    'from': {
-                        'flow_id': 1,
-                        'processor_id': 1,
-                        'id': 1,
-                    },
-                    'to': {
-                        'processor_id': 2,
-                        'flow_id': 2,
-                        'id': 2,
-                    },
-                }
-            ]
-        }
-
-    def get_processor1_json(self, data_type_id):
-        return {
-            'name': 'processor_input',
-            'parameters': [
-                {
-                    'label': 'parameter_a',
-                    'parameterType': 'text'
-                },
-                {
-                    'label': 'parameter_b',
-                    'parameterType': 'selection',
-                    'choices': [
-                        'A',
-                        'B',
-                        'C'
-                    ]
-                }
-            ],
-            'inputs': [
-                {
-                    'name': '输入',
-                    'dataType': data_type_id,
-                }
-            ],
-            'outputs': [
-                {
-                    'name': '输出',
-                    'dataType': data_type_id,
-                }
-            ]
-        }
-
-    def get_processor2_json(self, data_type_id):
-        return {
-            'name': 'processor_output',
-            'parameters': [
-                {
-                    'label': 'parameter_c',
-                    'parameterType': 'text'
-                },
-            ],
-            'inputs': [
-                {
-                    'name': '输入',
-                    'dataType': data_type_id,
-                }
-            ],
-            'outputs': [
-                {
-                    'name': '输出',
-                    'dataType': data_type_id,
-                }
-            ]
-        }
-
-    def setUp(self):
-        try:
-            self.data_type_id = DataType.objects.get(type_name='Any').id
-        except Exception:
-            data_type = DataType(type_name='Any', slug='any')
-            data_type.save()
-            self.data_type_id = data_type.pk
-
-    def test_post_workflow(self):
-        post_new_processor(self, self.get_processor1_json(self.data_type_id))
-        post_new_processor(self, self.get_processor2_json(self.data_type_id))
-        post_new_workflow(self, self.get_workflow_json_info(1, 2, self.data_type_id))
-        response = self.client.get(reverse('workflow:workflow'))
-        print response.content
-
-# class PostProcessorTestCase(TestCase):
-#     def get_json_info(self, data_type_id):
+# class PostWorkflowTestCase(TestCase):
+#     def get_workflow_json_info(self, proocessor1_id, processor2_id, data_type_id):
 #         return {
-#             'name': 'simple_processor_post_test',
+#             'name': 'simple_workflow_post_test',
+#             'processors': [
+#                 {
+#                     'id': proocessor1_id,
+#                     'flow_id': 1,
+#                     'parameters': {
+#                         'parameter_a': 'counter',
+#                         'parameter_b': 'C',
+#                     },
+#                 },
+#                 {
+#                     'id': processor2_id,
+#                     'flow_id': 2,
+#                     'parameters': {
+#                         'parameter_c': 'counter',
+#                     }
+#                 }
+#             ],
+#             'connections': [
+#                 {
+#                     'from': {
+#                         'flow_id': 1,
+#                         'processor_id': 1,
+#                         'id': 1,
+#                     },
+#                     'to': {
+#                         'processor_id': 2,
+#                         'flow_id': 2,
+#                         'id': 2,
+#                     },
+#                 }
+#             ]
+#         }
+#
+#     def get_processor1_json(self, data_type_id):
+#         return {
+#             'name': 'processor_input',
 #             'parameters': [
 #                 {
-#                     'label': 'label1',
+#                     'label': 'parameter_a',
 #                     'parameterType': 'text'
 #                 },
 #                 {
-#                     'label': 'whatever',
+#                     'label': 'parameter_b',
 #                     'parameterType': 'selection',
 #                     'choices': [
 #                         'A',
@@ -175,6 +104,29 @@ class PostWorkflowTestCase(TestCase):
 #                         'C'
 #                     ]
 #                 }
+#             ],
+#             'inputs': [
+#                 {
+#                     'name': '输入',
+#                     'dataType': data_type_id,
+#                 }
+#             ],
+#             'outputs': [
+#                 {
+#                     'name': '输出',
+#                     'dataType': data_type_id,
+#                 }
+#             ]
+#         }
+#
+#     def get_processor2_json(self, data_type_id):
+#         return {
+#             'name': 'processor_output',
+#             'parameters': [
+#                 {
+#                     'label': 'parameter_c',
+#                     'parameterType': 'text'
+#                 },
 #             ],
 #             'inputs': [
 #                 {
@@ -198,9 +150,60 @@ class PostWorkflowTestCase(TestCase):
 #             data_type.save()
 #             self.data_type_id = data_type.pk
 #
-#     def test_simple_post(self):
-#         response = post_new_processor(self, self.get_json_info(self.data_type_id))
-#         self.assertEqual(response.status_code, 200, msg=response.content)
-#
-#         response = self.client.get(reverse('workflow:processor'))
-#         print 'response of all processor: `%s`' % response.content
+#     def test_post_workflow(self):
+#         post_new_processor(self, self.get_processor1_json(self.data_type_id))
+#         post_new_processor(self, self.get_processor2_json(self.data_type_id))
+#         post_new_workflow(self, self.get_workflow_json_info(1, 2, self.data_type_id))
+#         response = self.client.get(reverse('workflow:workflow'))
+#         print response.content
+
+class PostProcessorTestCase(TestCase):
+    def get_json_info(self, data_type_id):
+        return {
+            'name': 'simple_processor_post_test',
+            'parameters': [
+                {
+                    'label': 'label1',
+                    'parameterType': 'text'
+                },
+                {
+                    'label': 'whatever',
+                    'parameterType': 'selection',
+                    'choices': [
+                        'A',
+                        'B',
+                        'C'
+                    ]
+                }
+            ],
+            'inputs': [
+                {
+                    'name': '输入',
+                    'dataType': data_type_id,
+                }
+            ],
+            'outputs': [
+                {
+                    'name': '输出',
+                    'dataType': data_type_id,
+                }
+            ],
+            'category': 'root1>child1>child2'
+        }
+
+    def setUp(self):
+        try:
+            self.data_type_id = DataType.objects.get(type_name='Any').id
+        except Exception:
+            data_type = DataType(type_name='Any', slug='any')
+            data_type.save()
+            self.data_type_id = data_type.pk
+
+    def test_simple_post(self):
+        print 'Start'
+        response = post_new_processor(self, self.get_json_info(1))
+        self.assertEqual(response.status_code, 200, msg=response.content)
+
+        response = self.client.get(reverse('workflow:processor'))
+        print 'response of all processor: `%s`' % response.content
+

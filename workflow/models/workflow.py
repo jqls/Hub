@@ -70,12 +70,12 @@ class Workflow(BasicModel):
                     roll_back.append(configured_parameter)
 
             for connection_dict in attributes['connections']:
-                input_channel = InputChannel.objects.get(pk=int(connection_dict['from']['id']))
-                output_channel = OutputChannel.objects.get(pk=int(connection_dict['to']['id']))
+                input_channel = InputChannel.objects.get(pk=int(connection_dict['to']['id']))
+                output_channel = OutputChannel.objects.get(pk=int(connection_dict['from']['id']))
                 input_processor = ConfiguredProcessor.objects.get(workflow=workflow,
-                                                                  flow_id=connection_dict['from']['flow_id'])
+                                                                  flow_id=connection_dict['to']['flow_id'])
                 output_processor = ConfiguredProcessor.objects.get(workflow=workflow,
-                                                                   flow_id=connection_dict['to']['flow_id'])
+                                                                   flow_id=connection_dict['from']['flow_id'])
                 connection = Connection(
                     input=input_channel,
                     output=output_channel,

@@ -36,20 +36,27 @@ class Processor(BasicModel):
         parent = None
         for category in categorys:
             child = ProcessorCategory.objects.get_or_create(parent=parent, name=category)
-            child.save()
-            parent = child
+            if child[1] == 1:
+                child[0].save()
+            parent = child[0]
         processor.category = parent
         # processor.exec_file = attributes['execFile']
         processor.save()
+        rollback = []
         try:
             for parameter_attributes in attributes['parameters']:
-                Parameter.create_from_json_dict(parameter_attributes, processor=processor)
+                a = Parameter.create_from_json_dict(parameter_attributes, processor=processor)
+                rollback.append(a)
             for input_attributes in attributes['inputs']:
-                InputChannel.create_from_json_dict(input_attributes, processor=processor)
+                a = InputChannel.create_from_json_dict(input_attributes, processor=processor)
+                rollback.append(a)
             for output_attributes in attributes['outputs']:
-                OutputChannel.create_from_json_dict(output_attributes, processor=processor)
+                a = OutputChannel.create_from_json_dict(output_attributes, processor=processor)
+                rollback.append(a)
         except Exception, e:
             processor.delete()
+            for item in rollback:
+                item.delete()
             raise e
         return processor
 
@@ -75,7 +82,7 @@ class ConfiguredProcessor(BasicModel):
 class ProcessorCategory(BasicModel):
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=20, verbose_name=u'图标名称')
-    parent = models.ForeignKey('self', related_name='children', default=None)
+    parent = models.ForeignKey('self', related_name='children', default=None, null=True)
 
     def to_sequence(self):
         path = self.name

@@ -19,7 +19,7 @@ class InputChannel(Channel):
         assert 'processor' in kwargs.keys()
         processor = kwargs['processor']
         data_type = DataType.objects.get(pk=attributes['dataType'])
-        channel = cls(data_type=data_type, processor=processor)
+        channel = cls(name=attributes['name'], data_type=data_type, processor=processor)
         channel.save()
         return channel
 
@@ -43,7 +43,7 @@ class OutputChannel(Channel):
         assert 'processor' in kwargs.keys()
         processor = kwargs['processor']
         data_type = DataType.objects.get(pk=attributes['dataType'])
-        channel = cls(data_type=data_type, processor=processor)
+        channel = cls(name=attributes['name'], data_type=data_type, processor=processor)
         channel.save()
         return channel
 
@@ -54,4 +54,4 @@ class OutputChannel(Channel):
         }
 
     class Meta:
-        unique_together = ('processor', 'name')
+        unique_together = (('processor', 'name'),)

@@ -54,8 +54,9 @@ class Workflow(BasicModel):
                 configured_processor = ConfiguredProcessor.objects.get_or_create(
                     meta_processor=processor,
                     workflow=workflow,
-                    flow_id=processor_attributes['flow_id']
+                    flow_id=processor_attributes['flow_id'],
                 )[0]
+                configured_processor.loc_x = processor_attributes['flow_id']
                 configured_processor.save()
                 roll_back.append(configured_processor)
 

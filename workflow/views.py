@@ -4,8 +4,9 @@ import json
 from django.http.response import HttpResponse, HttpResponseBadRequest, Http404, HttpResponseNotFound
 from django.shortcuts import get_object_or_404
 
-from workflow.models.processor import Processor
+from workflow.models.processor import Processor, Category, ProcessorCategory
 from workflow.models.workflow import Workflow
+from dispatcher.models import Mission
 from django.views.decorators.csrf import csrf_exempt
 
 def generic_get(request, model_cls):
@@ -34,13 +35,18 @@ def workflow_rest(request):
     return HttpResponseNotFound(content='not found')
 
 @csrf_exempt
+def mission_rest(request):
+    if request.method == 'GET':
+        return generic_get(request, Mission)
+    return HttpResponseNotFound(content='not found')
+
+@csrf_exempt
 def processor_rest(request):
     if request.method == "GET":
         return generic_get(request, Processor)
     elif request.method == "POST":
         try:
-            attributes_json = request.POST['info']
-            attributes = json.loads(attributes_json)
+            attributes = json.loads(request.body.decode("utf-8"))
             attributes['execFile'] = request.FILES['execFile']
             Processor.create_from_json_dict(attributes)
         except Exception, e:
@@ -49,20 +55,47 @@ def processor_rest(request):
         return HttpResponse()
     return HttpResponseNotFound()
 
-
+@csrf_exempt
 def processor_category_rest(request):
+    rollback = []
     if request.method == "GET":
-        with open('/home/spark/Category.txt', 'r') as f:
-            info = f.read()
-            HttpResponse(content=json.dumps(info), content_type='application/json')
+
+        info = Category.objects.get(category_id=-1).to_dict()
+        return HttpResponse(content=json.dumps(info), content_type='application/json')
 
     elif request.method == "POST":
         try:
-            with open('/home/spark/Category.txt', 'w') as f:
-                f.write(json.loads(request.POST['info']))
+            print request.body
+            attributes_json = json.loads(request.body.decode("utf-8"))
+            Category.delete_old(children=Category.objects.get(category_id=-1).children.all())
+            print 1111111
+            for attr in attributes_json:
+                a = Category.create_from_json_dict(attr, parent=Category.objects.get(category_id=-1))
+                rollback.append(a)
         except Exception, e:
+            for item in rollback:
+                item.delete()
             print e.message
             return HttpResponseBadRequest(e.message)
         return HttpResponse()
     return  HttpResponseNotFound()
 
+@csrf_exempt
+def processor_category_delete(request):
+    rollback = []
+    if request.method == "POST":
+        try:
+            print request.body
+            attributes_json = json.loads(request.body.decode("utf-8"))
+            ProcessorCategory.delete_old(children=ProcessorCategory.objects.get(category_id=attributes_json["id"]).children.all())
+            Category.delete_old(children=Category.objects.get(category_id=-1).children.all())
+            for attr in attributes_json:
+                a = Category.create_from_json_dict(attr, parent=Category.objects.get(category_id=-1))
+                rollback.append(a)
+        except Exception, e:
+            for item in rollback:
+                item.delete()
+            print e.message
+            return HttpResponseBadRequest(e.message)
+        return HttpResponse()
+    return  HttpResponseNotFound()

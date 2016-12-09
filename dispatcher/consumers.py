@@ -60,7 +60,8 @@ def processor_runner(message):
 
     cmd_header = cmd_header + " --class " + "Main" + ' ' + Processor.objects.get(id=processor_id).exec_file.name
     # cmd_header = cmd_header + " " + jar
-    cmd_header = cmd_header + " " + str(workflow_id) + "-" + str(mission_id) + "-" + str(processor_id)
+    para = str(workflow_id) + "-" + str(mission_id) + "-" + str(processor_id)
+    cmd_header = cmd_header + " " + para
 
     print cmd_header
     app_ID = ''
@@ -73,9 +74,8 @@ def processor_runner(message):
             app_ID = line[start:]
         if not line:
             break
-        Channel('log_output').send({
-            "text":line
-        })
+        with open("/home/spark/Log/"+para, 'a') as f:
+            f.write(line)
     proc.wait()
 
     # mot = monitor.SparkMonitor('10.5.0.223', '8088')
@@ -97,9 +97,6 @@ def processor_runner(message):
         update_status(workflow_id, int(message['flow_id']), 2)
 
 
-def log_output(message):
-    print message['text']
-
 
 def update_status(workflow_id, flow_id, stat):
     workflow = Workflow.objects.get(id=workflow_id)
@@ -107,3 +104,30 @@ def update_status(workflow_id, flow_id, stat):
     status = ConfiguredProcesserStatus.objects.get_or_create(targetWorkflow=workflow, targetProcessor=processor)
     status[0].status = stat
     status[0].save()
+
+def ws_connect(message):
+    print message.content
+    with open("/home/spark/Log/"+message.content['query_string'].split('=')[1], 'r') as f:
+        for line in f.readlines():
+            time.sleep(1)
+            message.reply_channel.send({
+                "text": line,
+            })
+
+
+def ws_receive(message):
+    print message.content
+    message.reply_channel.send({
+        "text": "lalala",
+    })
+    # print "-----------------------------"
+    # with open("/home/spark/Log/2-42-13", 'r') as f:
+    #     for line in f.readlines():
+    #         message.reply_channel.send({
+    #             "text": line
+    #         })
+
+def ws_disconnect(message):
+    message.reply_channel.send({
+        "text": "OK"
+    })

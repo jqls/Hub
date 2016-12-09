@@ -15,6 +15,16 @@ class Mission(models.Model):
     status = models.IntegerField(default=0)
     workflow = models.ForeignKey(Workflow, null=True)
 
+    def to_dict(self):
+        result = {
+            "id": self.pk,
+            "submit_time": str(self.startDate),
+            "finish_time": str(self.endDate),
+            "missionStatus": self.status,
+            "workflow_name": self.workflow.name
+        }
+        return result
+
 class Counter(models.Model):
     guid = models.CharField(max_length=200)
     counter = models.IntegerField(default=0)

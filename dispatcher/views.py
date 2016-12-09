@@ -31,6 +31,8 @@ def submit_mission_view(request):
             mission.save()
             missionId = str(Mission.objects.get(startDate=startdate).id)
             Channel('submit_mission').send({'workflow_id':request.POST["workflow_id"], 'mission_id': missionId})
+            dict['workflow_id'] = request.POST['workflow_id']
+            dict['mission_id'] = missionId
 
     except:
         import sys
@@ -60,6 +62,7 @@ def get_parameters_view(request, parameter):
 def get_inputs_view(request, parameter):
     info = []
     try:
+        print parameter
         if request.method == 'GET':
             paras = parameter.split('-')
             workflow_id, mission_id, processor_id = paras[0], paras[1], paras[2]

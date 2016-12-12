@@ -73,6 +73,8 @@ class Processor(BasicModel):
             for item in rollback:
                 item.delete()
             raise e
+        processor.delete()
+        print attributes
         return processor
 
 
@@ -179,5 +181,5 @@ class Category(BasicModel):
             return
 
         for child in children:
-            child.delete_old(children=child.children.all())
+            # child.delete_old(children=child.children.all())
             child.delete()

@@ -41,13 +41,14 @@ def mission_rest(request):
     return HttpResponseNotFound(content='not found')
 
 @csrf_exempt
-def processor_rest(request):
+def processor_rest(request, info):
     if request.method == "GET":
         return generic_get(request, Processor)
     elif request.method == "POST":
         try:
-            attributes = json.loads(request.body.decode("utf-8"))
-            attributes['execFile'] = request.FILES['execFile']
+            attributes = json.loads(info)
+            attributes['execFile'] = request.FILES.get('file', None)
+            print info
             Processor.create_from_json_dict(attributes)
         except Exception, e:
             print e.message
@@ -68,7 +69,6 @@ def processor_category_rest(request):
             print request.body
             attributes_json = json.loads(request.body.decode("utf-8"))
             Category.delete_old(children=Category.objects.get(category_id=-1).children.all())
-            print 1111111
             for attr in attributes_json:
                 a = Category.create_from_json_dict(attr, parent=Category.objects.get(category_id=-1))
                 rollback.append(a)
@@ -82,19 +82,13 @@ def processor_category_rest(request):
 
 @csrf_exempt
 def processor_category_delete(request):
-    rollback = []
     if request.method == "POST":
         try:
             print request.body
             attributes_json = json.loads(request.body.decode("utf-8"))
-            ProcessorCategory.delete_old(children=ProcessorCategory.objects.get(category_id=attributes_json["id"]).children.all())
-            Category.delete_old(children=Category.objects.get(category_id=-1).children.all())
-            for attr in attributes_json:
-                a = Category.create_from_json_dict(attr, parent=Category.objects.get(category_id=-1))
-                rollback.append(a)
+            # ProcessorCategory.delete_old(children=ProcessorCategory.objects.get(name=attributes_json["name"]).children.all())
+            ProcessorCategory.objects.get(name=attributes_json["name"]).delete()
         except Exception, e:
-            for item in rollback:
-                item.delete()
             print e.message
             return HttpResponseBadRequest(e.message)
         return HttpResponse()

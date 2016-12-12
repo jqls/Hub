@@ -18,7 +18,7 @@ class InputChannel(Channel):
     def create_from_json_dict(cls, attributes, **kwargs):
         assert 'processor' in kwargs.keys()
         processor = kwargs['processor']
-        data_type = DataType.objects.get(pk=attributes['dataType'])
+        data_type = DataType.objects.get(pk=int(attributes['dataType']))
         channel = cls(name=attributes['name'], data_type=data_type, processor=processor)
         channel.save()
         return channel
@@ -42,7 +42,7 @@ class OutputChannel(Channel):
     def create_from_json_dict(cls, attributes, **kwargs):
         assert 'processor' in kwargs.keys()
         processor = kwargs['processor']
-        data_type = DataType.objects.get(pk=attributes['dataType'])
+        data_type = DataType.objects.get(pk=int(attributes['dataType']))
         channel = cls(name=attributes['name'], data_type=data_type, processor=processor)
         channel.save()
         return channel

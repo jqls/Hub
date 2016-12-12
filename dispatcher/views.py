@@ -5,7 +5,7 @@ from channels.channel import Channel
 from django.forms.models import model_to_dict
 from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
-from models import Mission, Workflow, ProcesserOutputs, ConfiguredProcesserIO, ProcesserInputs
+from models import Mission, Workflow, ProcesserOutputs, ConfiguredProcesserIO, ProcesserInputs, ConfiguredParameter, ConfiguredProcessor, Processor
 from datetime import datetime
 from django.views.decorators.csrf import csrf_exempt
 
@@ -42,25 +42,30 @@ def submit_mission_view(request):
 
 @csrf_exempt
 def get_parameters_view(request, parameter):
-    info = {}
+    info = {'parameters':[], 'number':0}
+    # info = []
     try:
         if request.method == 'GET':
             paras = parameter.split('-')
             workflow_id, mission_id, processor_id = paras[0], paras[1], paras[2]
-            workflow_info = Workflow.objects.get(id=int(workflow_id)).to_dict()
+            parameters = ConfiguredParameter.objects.filter(configured_processor=ConfiguredProcessor.objects.get(workflow=Workflow.objects.get(id=int(workflow_id)),
+                                                                                                              meta_processor=Processor.objects.get(id=int(processor_id))))
 
-            for processor in workflow_info['processors']:
-                if processor['id'] == int(processor_id):
-                    info = processor['parameters']
+            for para in parameters:
+                obj = {}
+                obj['name'] = para.label
+                obj['value'] = para.val
+                info['parameters'].append(obj)
+                info['number'] += 1
     except:
         import sys
         info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
-
-    return HttpResponse(json.dumps(info))
+    print info
+    return HttpResponse(json.dumps(info), content_type='application/json')
 
 @csrf_exempt
 def get_inputs_view(request, parameter):
-    info = []
+    info = {"inputs":[], "number":0}
     try:
         print parameter
         if request.method == 'GET':
@@ -74,15 +79,16 @@ def get_inputs_view(request, parameter):
                     obj = {}
                     obj['name'] = input.name
                     obj['path'] = input.path
-                    info.append(obj)
+                    info['inputs'].append(obj)
+                    info['number'] += 1
             except:
                 return HttpResponse(json.dumps(info))
 
     except:
         import sys
         info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
-
-    return HttpResponse(json.dumps(info))
+    print info
+    return HttpResponse(json.dumps(info), content_type='application/json')
 
 @csrf_exempt
 def emit_outputs_view(request, parameter):
@@ -90,6 +96,7 @@ def emit_outputs_view(request, parameter):
     info = []
     try:
         if request.method == 'POST':
+            print request.body
             body = json.loads(request.body)
             req = byteify(body)
             paras = parameter.split('-')
@@ -112,5 +119,6 @@ def emit_outputs_view(request, parameter):
         import sys
         info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
         dict['message'] = info
+
 
     return HttpResponse(json.dumps(info))

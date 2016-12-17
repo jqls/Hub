@@ -29,21 +29,22 @@ class Counter(models.Model):
     guid = models.CharField(max_length=200)
     counter = models.IntegerField(default=0)
 
-class ConfiguredProcesserStatus(models.Model):
+class ConfiguredProcessorStatus(models.Model):
     status = models.IntegerField(default=0)
     targetProcessor = models.OneToOneField(ConfiguredProcessor, related_name='Status')
     targetWorkflow = models.ForeignKey(Workflow, null=True)
 
-class ConfiguredProcesserIO(models.Model):
-    processerID = models.IntegerField()
+class ConfiguredProcessorIO(models.Model):
+    processorID = models.IntegerField()
     mission = models.ForeignKey(Mission, null=True)
+    configured_processor = models.ForeignKey(ConfiguredProcessor, null=True)
 
-class ProcesserInputs(models.Model):
+class ProcessorInputs(models.Model):
     name = models.CharField(max_length=100)
-    path = models.CharField(max_length=200)
-    processor = models.ForeignKey(ConfiguredProcesserIO, null=True)
+    path = models.CharField(max_length=200, null=True)
+    processor = models.ForeignKey(ConfiguredProcessorIO, null=True)
 
-class ProcesserOutputs(models.Model):
+class ProcessorOutputs(models.Model):
     name = models.CharField(max_length=100)
-    path = models.CharField(max_length=200)
-    processor = models.ForeignKey(ConfiguredProcesserIO, null=True)
+    path = models.CharField(max_length=200, null=True)
+    processor = models.ForeignKey(ConfiguredProcessorIO, null=True)

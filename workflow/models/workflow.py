@@ -28,6 +28,14 @@ class Workflow(BasicModel):
     name = models.CharField(max_length=200)
     submit_time = models.DateTimeField(auto_now_add=True)
 
+    def to_sample_dict(self):
+        result = {
+            'id': self.pk,
+            'name': self.name,
+            'submitTime': self.submit_time.isoformat(),
+        }
+        return result
+
     def to_dict(self):
         result = {
             'id': self.pk,
@@ -56,7 +64,8 @@ class Workflow(BasicModel):
                     workflow=workflow,
                     flow_id=processor_attributes['flow_id'],
                 )[0]
-                configured_processor.loc_x = processor_attributes['flow_id']
+                configured_processor.loc_x = processor_attributes['loc_x']
+                configured_processor.loc_y = processor_attributes['loc_y']
                 configured_processor.save()
                 roll_back.append(configured_processor)
 
@@ -92,3 +101,6 @@ class Workflow(BasicModel):
                 thing.delete()
             workflow.delete()
             raise e
+
+        return workflow.id
+

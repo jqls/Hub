@@ -3,7 +3,7 @@ import logging
 import subprocess
 
 from channels.channel import Channel
-from models import Workflow, Counter, Processor, ConfiguredProcesserStatus
+from models import Workflow, Counter, Processor, ConfiguredProcessorStatus
 import uuid
 import monitor
 import json
@@ -21,6 +21,7 @@ def submit_mission(message):
         counter = Counter(guid=uid.hex)
         counter.save()
         rollback.append(counter)
+    print uuid2flowid
     while len(uuid2flowid.keys()):
         for UUID in uuid2flowid.keys():
             counter = Counter.objects.get(guid=UUID)
@@ -38,6 +39,7 @@ def submit_mission(message):
                             if uuid2flowid[i] == connection['input_processor_flow_id']:
                                 outputs.append(i)
                                 break
+                print UUID
                 Channel('processor_runner').send({'workflow_id':message['workflow_id'], 'mission_id':message['mission_id'],
                                                   'processor_id':processor_id, 'next_proc':outputs, 'uuid':UUID, 'flow_id':uuid2flowid[UUID]})
                 uuid2flowid.pop(UUID)
@@ -58,9 +60,9 @@ def processor_runner(message):
     print message['next_proc']
     cmd_header = "sudo -u spark spark-submit "
 
-    cmd_header = cmd_header + " --class " + "Main" + ' ' + Processor.objects.get(id=processor_id).exec_file.name
+    cmd_header = cmd_header + " --master yarn --deploy-mode cluster --class " + "com.Main" + ' ' + Processor.objects.get(id=processor_id).exec_file.name
     # cmd_header = cmd_header + " " + jar
-    para = str(workflow_id) + "-" + str(mission_id) + "-" + str(processor_id)
+    para = str(workflow_id) + "-" + str(mission_id) + "-" + str(processor_id) + "-" + str(message["flow_id"])
     cmd_header = cmd_header + " " + para
 
     print cmd_header
@@ -74,22 +76,23 @@ def processor_runner(message):
             app_ID = line[start:]
         if not line:
             break
+        # print line
         with open("/home/spark/Log/"+para, 'a') as f:
             f.write(line)
     proc.wait()
 
-    # mot = monitor.SparkMonitor('10.5.0.223', '8088')
-    # ret = mot.appInfo(app_ID)
-    # appinfo = mot.byteify(json.loads(ret[2]))
-    # if appinfo['app']['finalStatus'] == 'SUCCESSED':
-    if 1:
+    mot = monitor.SparkMonitor('10.5.0.223', '8088')
+    ret = mot.appInfo(app_ID)
+    appinfo = mot.byteify(json.loads(ret[2]))
+    # print appinfo
+    if appinfo['app']['finalStatus'] == 'SUCCEEDED':
         for UUID in message['next_proc']:
             counter = Counter.objects.get(guid=UUID)
             counter.counter = counter.counter + 1
             counter.save()
         update_status(workflow_id, int(message['flow_id']), 3)
 
-    else:
+    elif message['next_proc'] != []:
         counter = Counter.objects.get(guid=message['uuid'])
         counter.counter = -1
         counter.save()
@@ -101,7 +104,7 @@ def processor_runner(message):
 def update_status(workflow_id, flow_id, stat):
     workflow = Workflow.objects.get(id=workflow_id)
     processor = workflow.processors.get(flow_id=int(flow_id))
-    status = ConfiguredProcesserStatus.objects.get_or_create(targetWorkflow=workflow, targetProcessor=processor)
+    status = ConfiguredProcessorStatus.objects.get_or_create(targetWorkflow=workflow, targetProcessor=processor)
     status[0].status = stat
     status[0].save()
 

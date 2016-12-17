@@ -73,7 +73,7 @@ class Processor(BasicModel):
             for item in rollback:
                 item.delete()
             raise e
-        processor.delete()
+        # processor.delete()
         print attributes
         return processor
 

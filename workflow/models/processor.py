@@ -9,7 +9,8 @@ from io import InputChannel, OutputChannel
 
 class Processor(BasicModel):
     name = models.CharField(max_length=140)
-    exec_file = models.FileField(upload_to='exec_files', null=True)
+    is_visualization = models.BooleanField(default=False)
+    exec_file = models.FileField(upload_to='JAR/', null=True)
     category = models.ForeignKey('ProcessorCategory', related_name='processors')
 
     def drop(self):
@@ -29,14 +30,18 @@ class Processor(BasicModel):
 
     def to_dict(self):
         # todo：这里可以使用Magic
-
+        category = self.category.to_sequence()
+        if category == '':
+            return
         result = {
             "id": self.pk,
             "name": self.name,
+            "visualization": self.is_visualization,
             "params": [param.to_dict() for param in self.params.all()],
             "inputs": [input_channel.to_dict() for input_channel in self.inputs.all()],
             "outputs": [output_channel.to_dict() for output_channel in self.outputs.all()],
-            "category": self.category.to_sequence()
+            "category": category,
+            # "category": self.category.to_sequence()
         }
         return result
 
@@ -45,29 +50,44 @@ class Processor(BasicModel):
 
     @classmethod
     def create_from_json_dict(cls, attributes, **kwargs):
-        processor = Processor(name=attributes['name'], exec_file=attributes['execFile'])
+        # print attributes['is_visualization']
+        processor = Processor(name=attributes['name'], exec_file=attributes['execFile'], is_visualization=attributes['is_visualization'])
         category_path = attributes['category']
         categorys = category_path.split(">")
+        # print categorys
         parent = None
         for category in categorys:
-            child = ProcessorCategory.objects.get_or_create(parent=parent, name=category)
+            child = ProcessorCategory.objects.get_or_create(parent=parent, name=Category.objects.get(category_id=int(category)).category_name,
+                                                            category=Category.objects.get(category_id=int(category)))
+            # child = ProcessorCategory.objects.get_or_create(parent=parent, name=category)
             if child[1] == 1:
                 child[0].save()
             parent = child[0]
+        # print categorys
         processor.category = parent
         # processor.exec_file = attributes['execFile']
         processor.save()
         rollback = []
         try:
             for parameter_attributes in attributes['parameters']:
+                if parameter_attributes['label'] == '':
+                    continue
+                if parameter_attributes['parameterType'] == 'selection':
+                    parameter_attributes['choices'] = parameter_attributes['description'].split(",")
                 a = Parameter.create_from_json_dict(parameter_attributes, processor=processor)
                 rollback.append(a)
+            # print attributes
             for input_attributes in attributes['inputs']:
+                if input_attributes['name'] == '':
+                    continue
                 a = InputChannel.create_from_json_dict(input_attributes, processor=processor)
                 rollback.append(a)
             for output_attributes in attributes['outputs']:
+                if output_attributes['name'] == '':
+                    continue
                 a = OutputChannel.create_from_json_dict(output_attributes, processor=processor)
                 rollback.append(a)
+            print categorys
         except Exception, e:
             processor.delete()
             for item in rollback:
@@ -101,12 +121,19 @@ class ConfiguredProcessor(BasicModel):
 class ProcessorCategory(BasicModel):
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=20, verbose_name=u'图标名称')
+    category = models.ForeignKey("Category", related_name='ConfiguredCategory', default=None, null=True)
     parent = models.ForeignKey('self', related_name='children', default=None, null=True)
 
     def to_sequence(self):
+        catetory = self.category
+        if catetory.is_hidden:
+            return ''
         path = self.name
         parent = self.parent
         while parent != None:
+            catetory = parent.category
+            if catetory.is_hidden:
+                return ''
             path = parent.name + '>' + path
             parent = parent.parent
 
@@ -134,6 +161,7 @@ class Category(BasicModel):
     category_id = models.IntegerField()
     category_name = models.CharField(max_length=20)
     is_hidden = models.BooleanField(default=False)
+    picture_path = models.CharField(max_length=100, null=True)
     parent = models.ForeignKey('self', related_name='children', default=None, null=True)
 
     def to_dict(self):

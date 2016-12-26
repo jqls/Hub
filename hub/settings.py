@@ -174,3 +174,5 @@ LOGGING = {
 CELERY_BROKER_URL = 'amqp://admin:asd123@10.5.0.224:5672//'
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+MEDIA_ROOT = "/home/spark/"

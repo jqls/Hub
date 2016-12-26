@@ -34,7 +34,7 @@ def generic_get(request, model_cls):
             result = model_cls.objects.get(id=int(int(request.GET['workflow_id']))).to_dict()
     else:
         result = [model_cls.to_dict() for model_cls in model_cls.objects.all()]
-
+    print result
     return HttpResponse(content=json.dumps(result), content_type='application/json')
 
 # def workflow_get(request, model_cls):
@@ -88,8 +88,12 @@ def processor_rest(request, info):
     elif request.method == "POST":
         try:
             attributes = json.loads(info)
+            # print attributes
+            attributes['is_visualization'] = False if attributes['is_visualization'] == '0' else True
+            # print attributes
             attributes['execFile'] = request.FILES.get('file', None)
-            print info
+            print request.FILES.get('file', None).name
+            # print info
             Processor.create_from_json_dict(attributes)
         except Exception, e:
             print e.message

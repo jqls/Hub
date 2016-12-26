@@ -20,3 +20,15 @@ class BasicModel(models.Model):
 class DataType(BasicModel):
     type_name = models.CharField(max_length=10)
     slug = models.SlugField()
+
+class Document(BasicModel):
+    file_name = models.CharField(max_length=100)
+    file_path = models.CharField(max_length=100)
+
+    def to_dict(self):
+        result = {
+            'file_id': self.pk,
+            'file_name': self.file_name,
+        }
+        return result
+

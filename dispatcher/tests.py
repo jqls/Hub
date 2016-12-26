@@ -48,11 +48,11 @@ processor2 = {
         }
 
 processor1 = {
-            'name': 'Documents',
+            'name': 'Document-test',
             'parameters': [
                 {
                     'label': 'filePath',
-                    'parameterType': 'text'
+                    'parameterType': 'filelist'
                 },
 
             ],
@@ -309,7 +309,9 @@ workflow1 = {
             ]
         }
 
-# Processor.create_from_json_dict(processor6)
-Workflow.create_from_json_dict(workflow)
-# for i in range(15,24):
+# Processor.create_from_json_dict(processor1)
+# # Workflow.create_from_json_dict(workflow)
+# # for i in range(15,24):
 #     Workflow.objects.get(id=i).delete()
+
+Processor.objects.get(id=12).delete()

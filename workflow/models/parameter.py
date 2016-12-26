@@ -6,7 +6,7 @@ import sys
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from basic import BasicModel
+from basic import BasicModel, Document
 
 
 # todo: 并不知道这个Magic会不会很影响性能，目前能用就好
@@ -73,6 +73,19 @@ class ParameterText(ParameterInput):
         text.save()
         return text
 
+class ParameterFileList(ParameterInput):
+    parameter_type = "filelist"
+
+    def to_dict(self, result=None):
+        result = {"filelist": [file.to_dict() for file in Document.objects.all()]}
+        return super(ParameterFileList, self).to_dict(result)
+
+    @classmethod
+    def create_from_json_dict(cls, attributes, **kwargs):
+        filelist = ParameterFileList()
+        filelist.save()
+        return filelist
+
 
 # noinspection PyUnresolvedReferences
 class Parameter(BasicModel):
@@ -96,7 +109,6 @@ class Parameter(BasicModel):
         parameter_input_model = valid_parameters().get(parameter_attributes['parameterType'], None)
         if parameter_input_model is None:
             raise Exception('Parameter type %s is not expected.' % parameter_attributes['type'])
-
         parameter = None
         parameter_input = None
         try:

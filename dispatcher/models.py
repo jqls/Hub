@@ -33,6 +33,15 @@ class ConfiguredProcessorStatus(models.Model):
     status = models.IntegerField(default=0)
     targetProcessor = models.OneToOneField(ConfiguredProcessor, related_name='Status')
     targetWorkflow = models.ForeignKey(Workflow, null=True)
+    targetMission = models.ForeignKey(Mission, null=True)
+
+    def to_dict(self):
+        result = {
+            "processor_id": self.targetProcessor.meta_processor_id,
+            "flow_id": self.targetProcessor.flow_id,
+            "status": self.status,
+        }
+        return result
 
 class ConfiguredProcessorIO(models.Model):
     processorID = models.IntegerField()

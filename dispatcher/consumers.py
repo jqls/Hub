@@ -3,7 +3,7 @@ import logging
 import subprocess
 
 from channels.channel import Channel
-from models import Workflow, Counter, Processor, ConfiguredProcessorStatus
+from models import Workflow, Counter, Processor, ConfiguredProcessorStatus, Mission
 import uuid
 import monitor
 import json
@@ -44,11 +44,14 @@ def submit_mission(message):
                                                   'processor_id':processor_id, 'next_proc':outputs, 'uuid':UUID, 'flow_id':uuid2flowid[UUID]})
                 uuid2flowid.pop(UUID)
             elif counter.counter == -1:
+                update_mission_status(int(message['workflow_id']), int(message['mission_id']), 2)
                 for item in rollback:
                     item.delete()
                 return
     for item in rollback:
         item.delete()
+
+    update_mission_status(int(message['workflow_id']), int(message['mission_id']), 3)
     # logger.info('send uuid %s' % uid.hex)
     # Channel('counter').send({'uuid': uid.hex})
 
@@ -56,8 +59,8 @@ def processor_runner(message):
     workflow_id = int(message['workflow_id'])
     mission_id = message['mission_id']
     processor_id = message['processor_id']
-    print workflow_id
-    print message['next_proc']
+    # print workflow_id
+    # print message['next_proc']
     cmd_header = "sudo -u spark spark-submit "
 
     cmd_header = cmd_header + " --master yarn --deploy-mode cluster --class " + "com.Main" + ' ' + Processor.objects.get(id=processor_id).exec_file.name
@@ -68,6 +71,8 @@ def processor_runner(message):
     print cmd_header
     app_ID = ''
     proc = subprocess.Popen(cmd_header, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    update_status(workflow_id, int(message['flow_id']), int(mission_id), 1)
+    update_mission_status(int(message['workflow_id']), int(message['mission_id']), 1)
     while True:
         line = proc.stdout.readline()
         flag = line.find("Submitted application application_")
@@ -90,23 +95,28 @@ def processor_runner(message):
             counter = Counter.objects.get(guid=UUID)
             counter.counter = counter.counter + 1
             counter.save()
-        update_status(workflow_id, int(message['flow_id']), 3)
+        update_status(workflow_id, int(message['flow_id']), int(mission_id), 3)
 
     elif message['next_proc'] != []:
         counter = Counter.objects.get(guid=message['uuid'])
         counter.counter = -1
         counter.save()
 
-        update_status(workflow_id, int(message['flow_id']), 2)
+        update_status(workflow_id, int(message['flow_id']), int(mission_id), 2)
 
 
 
-def update_status(workflow_id, flow_id, stat):
+def update_status(workflow_id, flow_id, mission_id, stat):
     workflow = Workflow.objects.get(id=workflow_id)
-    processor = workflow.processors.get(flow_id=int(flow_id))
-    status = ConfiguredProcessorStatus.objects.get_or_create(targetWorkflow=workflow, targetProcessor=processor)
+    processor = workflow.processors.get(flow_id=str(flow_id))
+    status = ConfiguredProcessorStatus.objects.get_or_create(targetWorkflow=workflow, targetProcessor=processor, targetMission=Mission.objects.get(id=mission_id))
     status[0].status = stat
     status[0].save()
+
+def update_mission_status(workflow_id,mission_id, stat):
+    mission = Mission.objects.get(id=mission_id, workflow_id=workflow_id)
+    mission.status = stat
+    mission.save()
 
 def ws_connect(message):
     print message.content

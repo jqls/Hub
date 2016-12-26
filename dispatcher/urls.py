@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from dispatcher.views import submit_mission_view, get_inputs_view, emit_outputs_view, get_parameters_view, visualization_view
+from dispatcher.views import submit_mission_view, get_inputs_view, emit_outputs_view, get_parameters_view, visualization_view, processor_status_view
 
 app_name = 'dispatcher'
 
@@ -10,4 +10,5 @@ urlpatterns = [
     url(r'^emit_outputs/(.+)/$', emit_outputs_view, name='emit_outputs'),
     url(r'^get_parameters/(.+)/$', get_parameters_view, name='get_parameters'),
     url(r'^visualization/(.+)/$', visualization_view, name='visualization'),
+    url(r'^get_processor_status/(.+)/$', processor_status_view, name='get_processor_status'),
 ]

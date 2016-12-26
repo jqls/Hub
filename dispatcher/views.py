@@ -5,7 +5,7 @@ from channels.channel import Channel
 from django.forms.models import model_to_dict
 from django.http.response import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
-from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, ConfiguredProcessor, Processor, InputChannel, OutputChannel
+from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, ConfiguredProcessor, Processor, InputChannel, OutputChannel, ConfiguredProcessorStatus
 from datetime import datetime
 from django.views.decorators.csrf import csrf_exempt
 import subprocess
@@ -184,6 +184,28 @@ def visualization_view(request, parameter):
                 if num == int(line_num):
                     break
             print num
+            return HttpResponse(json.dumps(resultdata))
+    except:
+        import  sys
+        info = "%s || %s" % (sys.exc_info()[0], sys.exc_info()[1])
+
+    dict['message'] = info
+
+    return HttpResponse(json.dumps(dict))
+
+@csrf_exempt
+def processor_status_view(request, parameter):
+    dict = {}
+    info = "OK"
+    try:
+        if request.method == "GET":
+            paras = parameter.split("-")
+            # paras2 = paras[:len(paras)-2]
+            print parameter
+            workflow_id, mission_id = paras[0], paras[1]
+
+            resultdata = [status.to_dict() for status in ConfiguredProcessorStatus.objects.filter(targetWorkflow_id=int(workflow_id),targetMission_id=int(mission_id))]
+            # print resultdata
             return HttpResponse(json.dumps(resultdata))
     except:
         import  sys

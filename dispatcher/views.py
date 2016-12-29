@@ -5,7 +5,7 @@ from channels.channel import Channel
 from django.forms.models import model_to_dict
 from django.http.response import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
-from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, ConfiguredProcessor, Processor, InputChannel, OutputChannel, ConfiguredProcessorStatus
+from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, ConfiguredProcessor, Processor, InputChannel, OutputChannel, ConfiguredProcessorStatus, Document
 from datetime import datetime
 from django.views.decorators.csrf import csrf_exempt
 import subprocess
@@ -77,7 +77,7 @@ def get_parameters_view(request, parameter):
             for para in parameters:
                 obj = {}
                 obj['name'] = para.label
-                obj['value'] = para.val
+                obj['value'] = para.val if para.label != 'filePath' else Document.objects.get(id=para.val).file_path
                 info['parameters'].append(obj)
                 info['number'] += 1
     except:
@@ -164,6 +164,9 @@ def visualization_view(request, parameter):
             paras = parameter.split("-")
             paras2 = paras[:len(paras)-2]
             workflow_id, mission_id, processor_id, flow_id, port_id, line_num = paras[0], paras[1], paras[2], paras[3], paras[4], paras[5]
+
+            if int(line_num) == 0:
+                line_num = 1000
 
             resultdata = []
             dir = workflow_id + "-" + mission_id

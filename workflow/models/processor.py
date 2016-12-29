@@ -72,8 +72,8 @@ class Processor(BasicModel):
             for parameter_attributes in attributes['parameters']:
                 if parameter_attributes['label'] == '':
                     continue
-                if parameter_attributes['parameterType'] == 'selection':
-                    parameter_attributes['choices'] = parameter_attributes['description'].split(",")
+                # if parameter_attributes['parameterType'] == 'selection':
+                #     parameter_attributes['choices'] = parameter_attributes['description'].split(",")
                 a = Parameter.create_from_json_dict(parameter_attributes, processor=processor)
                 rollback.append(a)
             # print attributes

@@ -1,6 +1,7 @@
 import time
 import logging
 import subprocess
+from django.conf import settings
 
 from channels.channel import Channel
 from models import Workflow, Counter, Processor, ConfiguredProcessorStatus, Mission
@@ -43,6 +44,7 @@ def submit_mission(message):
                 Channel('processor_runner').send({'workflow_id':message['workflow_id'], 'mission_id':message['mission_id'],
                                                   'processor_id':processor_id, 'next_proc':outputs, 'uuid':UUID, 'flow_id':uuid2flowid[UUID]})
                 uuid2flowid.pop(UUID)
+                print uuid2flowid
             elif counter.counter == -1:
                 update_mission_status(int(message['workflow_id']), int(message['mission_id']), 2)
                 for item in rollback:
@@ -51,7 +53,7 @@ def submit_mission(message):
     for item in rollback:
         item.delete()
 
-    update_mission_status(int(message['workflow_id']), int(message['mission_id']), 3)
+
     # logger.info('send uuid %s' % uid.hex)
     # Channel('counter').send({'uuid': uid.hex})
 
@@ -60,37 +62,43 @@ def processor_runner(message):
     mission_id = message['mission_id']
     processor_id = message['processor_id']
     # print workflow_id
-    # print message['next_proc']
+    print message['next_proc']
     cmd_header = "sudo -u spark spark-submit "
 
-    cmd_header = cmd_header + " --master yarn --deploy-mode cluster --class " + "com.Main" + ' ' + Processor.objects.get(id=processor_id).exec_file.name
+    cmd_header = cmd_header + " --master spark://hadoop2:7077 --class com.Main" + ' ' + settings.MEDIA_ROOT + Processor.objects.get(id=processor_id).exec_file.name
+    # cmd_header = cmd_header + " --master yarn --deploy-modecluster --class com.Main" + ' ' + settings.MEDIA_ROOT + Processor.objects.get(
+    #     id=processor_id).exec_file.name
     # cmd_header = cmd_header + " " + jar
     para = str(workflow_id) + "-" + str(mission_id) + "-" + str(processor_id) + "-" + str(message["flow_id"])
     cmd_header = cmd_header + " " + para
 
     print cmd_header
+    error = False
     app_ID = ''
     proc = subprocess.Popen(cmd_header, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     update_status(workflow_id, int(message['flow_id']), int(mission_id), 1)
     update_mission_status(int(message['workflow_id']), int(message['mission_id']), 1)
     while True:
         line = proc.stdout.readline()
-        flag = line.find("Submitted application application_")
+        flag = line.find("Connected to Spark cluster with app ID app-")
+        if line.find("Exception") >= 0:
+            error = True
         if flag >= 0:
-            start = line.find("application_")
-            app_ID = line[start:]
+            start = line.find("app-")
+            app_ID = line[start:].strip()
         if not line:
             break
-        # print line
+        print line
         with open("/home/spark/Log/"+para, 'a') as f:
             f.write(line)
     proc.wait()
 
-    mot = monitor.SparkMonitor('10.5.0.223', '8088')
+    mot = monitor.SparkMonitor('10.5.0.223', '18080')
     ret = mot.appInfo(app_ID)
-    appinfo = mot.byteify(json.loads(ret[2]))
-    # print appinfo
-    if appinfo['app']['finalStatus'] == 'SUCCEEDED':
+    if ret and not error:
+    # if appinfo['attempts']['status']:
+        if message['next_proc'] == []:
+            update_mission_status(int(message['workflow_id']), int(message['mission_id']), 3)
         for UUID in message['next_proc']:
             counter = Counter.objects.get(guid=UUID)
             counter.counter = counter.counter + 1

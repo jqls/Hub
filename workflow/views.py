@@ -8,6 +8,7 @@ from workflow.models.processor import Processor, Category, ProcessorCategory
 from workflow.models.workflow import Workflow
 from dispatcher.models import Mission
 from django.views.decorators.csrf import csrf_exempt
+import pymysql
 
 def byteify(input):
     if isinstance(input, dict):
@@ -113,7 +114,7 @@ def processor_category_rest(request):
         try:
             print request.body
             attributes_json = json.loads(request.body.decode("utf-8"))
-            Category.delete_old(children=Category.objects.get(category_id=-1).children.all())
+            # Category.delete_old(children=Category.objects.get(category_id=-1).children.all())
             for attr in attributes_json:
                 a = Category.create_from_json_dict(attr, parent=Category.objects.get(category_id=-1))
                 rollback.append(a)
@@ -130,12 +131,69 @@ def processor_category_delete(request):
     if request.method == "POST":
         try:
             print request.body
-            attributes_json = json.loads(request.body.decode("utf-8"))
+            # attributes_json = json.loads(request.body.decode("utf-8"))
             # ProcessorCategory.delete_old(children=ProcessorCategory.objects.get(name=attributes_json["name"]).children.all())
-            Category.objects.get(category_name=attributes_json["name"]).delete()
-            ProcessorCategory.objects.get(name=attributes_json["name"]).delete()
+            Category.objects.get(category_id=int(request.body)).delete()
+            # ProcessorCategory.objects.get(category_id=attributes_json["name"]).delete()
         except Exception, e:
             print e.message
             return HttpResponseBadRequest(e.message)
         return HttpResponse()
     return  HttpResponseNotFound()
+
+
+def mysql_rest(attributes, operation):
+    data = {}
+    try:
+        # print type(operation)
+        host = attributes['parameters']['host']
+        port = attributes['parameters']['port']
+        password = attributes['parameters']['password']
+        user = attributes['parameters']['user']
+        dbase = attributes['parameters']['dbase']
+        conn = pymysql.connect(host=host, port=int(port), user=user, passwd=password, db=dbase)
+        cur = conn.cursor()
+        if operation == 0:
+            cur.execute("show tables")
+            data['table_list'] = []
+            for r in cur:
+                print r[0]
+                data['table_list'].append(r[0])
+            if data['table_list'] != 
+
+        elif operation == 1:
+            table_name = attributes['parameters']['table_name']
+            cur.execute("show columns from {}".format(table_name))
+            data['col_list'] = []
+            for r in cur:
+                data['col_list'].append(r[0])
+                print r[0]
+        cur.close()
+        conn.close()
+    except Exception, e:
+        print e.message
+        return HttpResponse(json.dumps(e.message))
+    return data
+
+@csrf_exempt
+def sql_rest(request, operation):
+    data = None
+    try:
+        if request.method == "POST":
+            try:
+                attributes_json = json.loads(request.body.decode("utf-8"))
+                # print attributes_json
+                if attributes_json["ac_id"] == 1:
+                    if attributes_json["db_id"] == 1:
+                        # print attributes_json
+                        data = mysql_rest(attributes_json, int(operation))
+                    else:
+                        return HttpResponseBadRequest()
+                else:
+                    return HttpResponseBadRequest()
+            except Exception, e:
+                print e.message
+                return HttpResponse(json.dumps(e.message))
+    except Exception, e:
+        return HttpResponseBadRequest(json.dumps(e.message))
+    return HttpResponse(json.dumps(data))

@@ -31,7 +31,7 @@ class Counter(models.Model):
 
 class ConfiguredProcessorStatus(models.Model):
     status = models.IntegerField(default=0)
-    targetProcessor = models.OneToOneField(ConfiguredProcessor, related_name='Status')
+    targetProcessor = models.ForeignKey(ConfiguredProcessor, related_name='Status')
     targetWorkflow = models.ForeignKey(Workflow, null=True)
     targetMission = models.ForeignKey(Mission, null=True)
 

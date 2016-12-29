@@ -172,7 +172,7 @@ class ConfiguredParameter(BasicModel):
     def to_dict(self):
         return {
             'processor_id': self.configured_processor.meta_processor.pk,
-            'flow_id': self.configured_processor.pk,
+            'flow_id': self.configured_processor.flow_id,
             'label': self.label,
             'val': self.val,
         }

@@ -5,7 +5,7 @@ from channels.channel import Channel
 from django.forms.models import model_to_dict
 from django.http.response import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
-from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, ConfiguredProcessor, Processor, InputChannel, OutputChannel, ConfiguredProcessorStatus, Document
+from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, ConfiguredProcessor, Processor, InputChannel, OutputChannel, ConfiguredProcessorStatus, Document, Database
 from datetime import datetime
 from django.views.decorators.csrf import csrf_exempt
 import subprocess
@@ -73,11 +73,17 @@ def get_parameters_view(request, parameter):
             parameters = ConfiguredParameter.objects.filter(configured_processor=ConfiguredProcessor.objects.get(workflow=Workflow.objects.get(id=int(workflow_id)),
                                                                                                               meta_processor=Processor.objects.get(id=int(processor_id)),
                                                                                                                  flow_id=int(flow_id)))
+            # belong_to = ''
+            # if Processor.objects.get(id=int(processor_id)).algorithm_category_id == 1:
+            #     Processor.objects.get(id=int(processor_id)).params.all().get(stage=0).configuredparameter_set
 
             for para in parameters:
                 obj = {}
                 obj['name'] = para.label
-                obj['value'] = para.val if para.label != 'filePath' else Document.objects.get(id=para.val).file_path
+                if para.label == 'filePath' or para.label == 'sql_list':
+                    obj['value'] = Document.objects.get(id=int(para.val)).file_path if para.label == 'filePath' else Database.objects.get(db_id=int(para.val)).db_name
+                else:
+                    obj['value'] = para.val
                 info['parameters'].append(obj)
                 info['number'] += 1
     except:
@@ -94,6 +100,8 @@ def get_inputs_view(request, parameter):
         if request.method == 'GET':
             paras = parameter.split('-')
             workflow_id, mission_id, processor_id, flow_id = paras[0], paras[1], paras[2], paras[3]
+            if int(workflow_id) == 15:
+                return HttpResponse(json.dumps(info), content_type='application/json')
             workflow = Workflow.objects.get(id=int(workflow_id))
             mission = workflow.mission_set.get(id=int(mission_id))
 

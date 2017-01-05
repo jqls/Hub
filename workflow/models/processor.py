@@ -9,6 +9,7 @@ from io import InputChannel, OutputChannel
 
 class Processor(BasicModel):
     name = models.CharField(max_length=140)
+    algorithm_category_id = models.IntegerField(default=0)
     is_visualization = models.BooleanField(default=False)
     exec_file = models.FileField(upload_to='JAR/', null=True)
     category = models.ForeignKey('ProcessorCategory', related_name='processors')
@@ -36,8 +37,9 @@ class Processor(BasicModel):
         result = {
             "id": self.pk,
             "name": self.name,
+            "ac_id": self.algorithm_category_id,
             "visualization": self.is_visualization,
-            "params": [param.to_dict() for param in self.params.all()],
+            "params": [param.to_dict(self.algorithm_category_id) for param in self.params.all() if not param.to_dict(self.algorithm_category_id) is None], # add ac_id
             "inputs": [input_channel.to_dict() for input_channel in self.inputs.all()],
             "outputs": [output_channel.to_dict() for output_channel in self.outputs.all()],
             "category": category,
@@ -51,7 +53,7 @@ class Processor(BasicModel):
     @classmethod
     def create_from_json_dict(cls, attributes, **kwargs):
         # print attributes['is_visualization']
-        processor = Processor(name=attributes['name'], exec_file=attributes['execFile'], is_visualization=attributes['is_visualization'])
+        processor = Processor(name=attributes['name'], exec_file=attributes['execFile'], is_visualization=attributes['is_visualization'], algorithm_category_id=attributes['ac_id'])
         category_path = attributes['category']
         categorys = category_path.split(">")
         # print categorys

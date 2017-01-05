@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 
 import inspect
 import sys
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from basic import BasicModel, Document
+from basic import BasicModel, Document, Database
 
 
 # todo: 并不知道这个Magic会不会很影响性能，目前能用就好
@@ -25,6 +25,7 @@ def is_valid_parameter(parameter_type):
 
 class ParameterInput(BasicModel):
     parameter_type = "meta"
+    parameter = GenericRelation('Parameter')
 
     def to_dict(self, result=None):
         if result is None:
@@ -86,6 +87,21 @@ class ParameterFileList(ParameterInput):
         filelist.save()
         return filelist
 
+class ParameterDatabase(ParameterInput):
+    parameter_type = "database"
+    # database = models.ForeignKey("Database", default=None, null=True, related_name="database_parameters")
+
+    def to_dict(self, result=None):
+        result = {"database": [db.to_dict() for db in Database.objects.all()]}
+        return super(ParameterDatabase, self).to_dict(result)
+
+    @classmethod
+    def create_from_json_dict(cls, attributes, **kwargs):
+        database = ParameterDatabase()
+        # database.database = Database.objects.get(db_name=attributes['belong_to'])
+        database.save()
+        return database
+
 
 # noinspection PyUnresolvedReferences
 class Parameter(BasicModel):
@@ -93,6 +109,8 @@ class Parameter(BasicModel):
     hint = models.CharField(max_length=130, blank=True, default="")
     value = models.CharField(max_length=225, blank=True, default="")
     optional = models.BooleanField(default=True)
+    belong_to = models.CharField(max_length=30, blank=True, default="")
+    stage = models.IntegerField(blank=True, default=0)
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
@@ -118,6 +136,8 @@ class Parameter(BasicModel):
                 hint=parameter_attributes.get('hint', ''),
                 value=parameter_attributes.get('value', ''),
                 optional=parameter_attributes.get('optional', True),
+                belong_to=parameter_attributes.get('belong_to', ''), # New parameter
+                stage=parameter_attributes.get('stage', 0),  # New parameter
                 parameter_input_object=parameter_input,
                 processor=processor
             )
@@ -130,7 +150,12 @@ class Parameter(BasicModel):
             raise e
         return parameter
 
-    def to_dict(self):
+    def to_dict(self, algorithm_category = 0, stage = 0):
+        if algorithm_category == 1:
+            # if self.parameter_input_object.parameter_type != 'database':
+            if self.stage != stage:
+                return
+                # return {"url":}
         result = {
             'id': self.pk,
             'key': self.label,
@@ -141,6 +166,8 @@ class Parameter(BasicModel):
             'required': self.optional,
             'optional': self.optional,
             'controlType': self.parameter_input_object.parameter_type,
+            'stage:': self.stage,
+            'belong_to': self.belong_to,
         }
         if self.parameter_input_object is not None:
             result.update(self.parameter_input_object.to_dict())
@@ -168,6 +195,7 @@ class ConfiguredParameter(BasicModel):
     val = models.CharField(max_length=200)
     configured_processor = models.ForeignKey('ConfiguredProcessor', related_name='parameters')
     workflow = models.ForeignKey('Workflow', related_name='parameters')
+    # mission = models.ForeignKey('Mission', related_name='parameters', null=True, default=None)
 
     def to_dict(self):
         return {

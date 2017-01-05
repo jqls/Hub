@@ -88,7 +88,7 @@ def processor_runner(message):
             app_ID = line[start:].strip()
         if not line:
             break
-        print line
+        # print line
         with open("/home/spark/Log/"+para, 'a') as f:
             f.write(line)
     proc.wait()

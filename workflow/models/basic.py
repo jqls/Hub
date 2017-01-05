@@ -32,3 +32,14 @@ class Document(BasicModel):
         }
         return result
 
+class Database(BasicModel):
+    db_id = models.IntegerField()
+    db_name = models.CharField(max_length=100)
+
+    def to_dict(self):
+        result = {
+            'id': self.pk,
+            'db_id': self.db_id,
+            'db_name': self.db_name,
+        }
+        return result

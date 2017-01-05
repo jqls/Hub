@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404
 
 from workflow.models.processor import Processor, Category, ProcessorCategory
 from workflow.models.workflow import Workflow
+from workflow.models.parameter import Parameter, ParameterDatabase
+from workflow.models.basic import Database
 from dispatcher.models import Mission
 from django.views.decorators.csrf import csrf_exempt
 import pymysql
@@ -159,7 +161,8 @@ def mysql_rest(attributes, operation):
             for r in cur:
                 print r[0]
                 data['table_list'].append(r[0])
-            if data['table_list'] != 
+            if data['table_list'] != []:
+                data['url'] = '/workflow/sql/1/'
 
         elif operation == 1:
             table_name = attributes['parameters']['table_name']
@@ -172,7 +175,7 @@ def mysql_rest(attributes, operation):
         conn.close()
     except Exception, e:
         print e.message
-        return HttpResponse(json.dumps(e.message))
+        return json.dumps(e.message)
     return data
 
 @csrf_exempt
@@ -184,13 +187,22 @@ def sql_rest(request, operation):
                 attributes_json = json.loads(request.body.decode("utf-8"))
                 # print attributes_json
                 if attributes_json["ac_id"] == 1:
-                    if attributes_json["db_id"] == 1:
+                    if attributes_json["parameters"]["database"] == "mysql":
                         # print attributes_json
                         data = mysql_rest(attributes_json, int(operation))
                     else:
                         return HttpResponseBadRequest()
                 else:
                     return HttpResponseBadRequest()
+            except Exception, e:
+                print e.message
+                return HttpResponse(json.dumps(e.message))
+        elif request.method == "GET":
+            try:
+                data = {}
+                data["parameters"] = [parameter.to_dict() for parameter in Parameter.objects.filter(belong_to=request.GET["database"], processor_id=int(request.GET["processor_id"]),
+                                                                                          stage=int(operation))]
+
             except Exception, e:
                 print e.message
                 return HttpResponse(json.dumps(e.message))

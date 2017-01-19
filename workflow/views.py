@@ -1,13 +1,13 @@
 # coding=utf-8
 import json
-
+import os, subprocess
 from django.http.response import HttpResponse, HttpResponseBadRequest, Http404, HttpResponseNotFound
 from django.shortcuts import get_object_or_404
-
+from hub.settings import MEDIA_ROOT, HDFS_DATA_ROOT
 from workflow.models.processor import Processor, Category, ProcessorCategory
 from workflow.models.workflow import Workflow
 from workflow.models.parameter import Parameter, ParameterDatabase
-from workflow.models.basic import Database
+from workflow.models.basic import Database, Document
 from dispatcher.models import Mission
 from django.views.decorators.csrf import csrf_exempt
 import pymysql
@@ -21,6 +21,10 @@ def byteify(input):
         return input.encode('utf-8')
     else:
         return input
+
+def remove_item(path):
+    if os.path.exists(path):
+        os.remove(path)
 
 def generic_get(request, model_cls):
     # todo: need pagination option
@@ -91,8 +95,8 @@ def processor_rest(request, info):
     elif request.method == "POST":
         try:
             attributes = json.loads(info)
-            # print attributes
-            attributes['is_visualization'] = False if attributes['is_visualization'] == '0' else True
+            print attributes
+            # attributes['is_visualization'] = False if attributes['is_visualization'] == '0' else True
             # print attributes
             attributes['execFile'] = request.FILES.get('file', None)
             print request.FILES.get('file', None).name
@@ -105,7 +109,7 @@ def processor_rest(request, info):
     return HttpResponseNotFound()
 
 @csrf_exempt
-def processor_category_rest(request):
+def processor_category_rest(request, parameter):
     rollback = []
     if request.method == "GET":
 
@@ -114,12 +118,16 @@ def processor_category_rest(request):
 
     elif request.method == "POST":
         try:
-            print request.body
-            attributes_json = json.loads(request.body.decode("utf-8"))
+            # print parameter
+            attributes_json = json.loads(parameter)
+
+            attributes_json['image'] = request.FILES.get('image', None)
+            # print request.FILES.get('image', None).name
+            print attributes_json
             # Category.delete_old(children=Category.objects.get(category_id=-1).children.all())
-            for attr in attributes_json:
-                a = Category.create_from_json_dict(attr, parent=Category.objects.get(category_id=-1))
-                rollback.append(a)
+            # for attr in attributes_json:
+            a = Category.create_from_json_dict(attributes_json, parent=Category.objects.get(category_id=-1), image = attributes_json['image'])
+            rollback.append(a)
         except Exception, e:
             for item in rollback:
                 item.delete()
@@ -135,7 +143,22 @@ def processor_category_delete(request):
             print request.body
             # attributes_json = json.loads(request.body.decode("utf-8"))
             # ProcessorCategory.delete_old(children=ProcessorCategory.objects.get(name=attributes_json["name"]).children.all())
-            Category.objects.get(category_id=int(request.body)).delete()
+            target = Category.objects.get(category_id=int(request.body))
+            paths = []
+            children = []
+            paths.append(MEDIA_ROOT + target.picture_path.name)
+            for child in target.children.all():
+                children.append(child)
+                paths.append(MEDIA_ROOT + child.picture_path.name)
+            while children != []:
+                curr = children.pop()
+                for child in curr.children.all():
+                    children.append(child)
+                    paths.append(MEDIA_ROOT + child.picture_path.name)
+            for path in paths:
+                remove_item(path)
+
+            target.delete()
             # ProcessorCategory.objects.get(category_id=attributes_json["name"]).delete()
         except Exception, e:
             print e.message
@@ -143,6 +166,31 @@ def processor_category_delete(request):
         return HttpResponse()
     return  HttpResponseNotFound()
 
+@csrf_exempt
+def document_rest(request, info):
+    if request.method == "POST":
+        roll_back = []
+        try:
+            # print request.FILES
+            attributes = json.loads(info)
+            attributes['document'] = request.FILES.get('document', None)
+            print request.FILES.get('document', None).name
+            a = Document.create_from_json_dict(attributes)
+            roll_back.append(a)
+            cmd = "sudo -u spark hdfs dfs -copyFromLocal " + MEDIA_ROOT + a.document.name + " " + HDFS_DATA_ROOT
+            print cmd
+            proc = subprocess.Popen(cmd, shell=True)
+            proc.wait()
+            remove_item(MEDIA_ROOT + a.document.name)
+            a.file_path = HDFS_DATA_ROOT + attributes['document'].name
+            a.save()
+        except Exception, e:
+            for a in roll_back:
+                a.delete()
+            print e.message
+            return HttpResponse(json.dumps({"error": e.message}))
+        return HttpResponse(json.dumps({"info": "OK"}))
+    return HttpResponseNotFound
 
 def mysql_rest(attributes, operation):
     data = {}
@@ -165,7 +213,8 @@ def mysql_rest(attributes, operation):
                 data['url'] = '/workflow/sql/1/'
 
         elif operation == 1:
-            table_name = attributes['parameters']['table_name']
+            print attributes['parameters']['tablelist']
+            table_name = attributes['parameters']['tablelist']
             cur.execute("show columns from {}".format(table_name))
             data['col_list'] = []
             for r in cur:
@@ -185,9 +234,9 @@ def sql_rest(request, operation):
         if request.method == "POST":
             try:
                 attributes_json = json.loads(request.body.decode("utf-8"))
-                # print attributes_json
+                print attributes_json
                 if attributes_json["ac_id"] == 1:
-                    if attributes_json["parameters"]["database"] == "mysql":
+                    if attributes_json["db_id"] == 1:
                         # print attributes_json
                         data = mysql_rest(attributes_json, int(operation))
                     else:

@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, ConfiguredProcessor, Processor, InputChannel, OutputChannel, ConfiguredProcessorStatus, Document, Database
 from datetime import datetime
 from django.views.decorators.csrf import csrf_exempt
-import subprocess
+from SearchItems import SearchItems
 
 def byteify(input):
     if isinstance(input, dict):
@@ -171,30 +171,37 @@ def visualization_view(request, parameter):
         if request.method == "GET":
             paras = parameter.split("-")
             paras2 = paras[:len(paras)-2]
-            workflow_id, mission_id, processor_id, flow_id, port_id, line_num = paras[0], paras[1], paras[2], paras[3], paras[4], paras[5]
+            workflow_id, mission_id, processor_id, flow_id, port_id, category = paras[0], paras[1], paras[2], paras[3], paras[4], paras[5]
 
-            if int(line_num) == 0:
-                line_num = 1000
+            # if int(line_num) == 0:
+            #     line_num = 1000
 
             resultdata = []
             dir = workflow_id + "-" + mission_id
             file = "-".join(paras2) + "-" + OutputChannel.objects.get(id=int(port_id)).name + ".text"
             path = "/user/spark/result_data/" + dir + "/" + file
-            cmd_header = "sudo -u spark hdfs dfs -cat " + path
-            proc = subprocess.Popen(cmd_header, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            num = 0
-            while True:
-                line = proc.stdout.readline()
-                if line == '':
-                    break
-                line = line.replace(")", "").replace("(", "").replace("\n", "")
-                if line == '':
-                    break
-                resultdata.append(line)
-                num += 1
-                if num == int(line_num):
-                    break
-            print num
+            search_obj = None
+            target_item = request.GET.get("target", None)
+            if category == 0 and target_item is not None:
+                search_obj = SearchItems(path, target_item, 1)
+            else:
+                search_obj = SearchItems(path)
+            resultdata = search_obj.SearchFromAlgorithm(category)
+            # cmd_header = "sudo -u spark hdfs dfs -cat " + path
+            # proc = subprocess.Popen(cmd_header, shell=True, stdout=subprocess.PIPE, stderr=None)
+            # num = 0
+            # while True:
+            #     line = proc.stdout.readline()
+            #     if line == '':
+            #         break
+            #     line = line.replace(")", "").replace("(", "").replace("\n", "")
+            #     if line == '':
+            #         break
+            #     resultdata.append(line)
+            #     num += 1
+            #     if num == int(line_num):
+            #         break
+            # print num
             return HttpResponse(json.dumps(resultdata))
     except:
         import  sys

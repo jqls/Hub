@@ -74,6 +74,15 @@ class ParameterText(ParameterInput):
         text.save()
         return text
 
+class ParameterCheckbox(ParameterInput):
+    parameter_type = "checkbox"
+
+    @classmethod
+    def create_from_json_dict(cls, attributes, **kwargs):
+        checkbox = ParameterCheckbox()
+        checkbox.save()
+        return checkbox
+
 class ParameterFileList(ParameterInput):
     parameter_type = "filelist"
 
@@ -166,7 +175,7 @@ class Parameter(BasicModel):
             'required': self.optional,
             'optional': self.optional,
             'controlType': self.parameter_input_object.parameter_type,
-            'stage:': self.stage,
+            'stage': self.stage,
             'belong_to': self.belong_to,
         }
         if self.parameter_input_object is not None:

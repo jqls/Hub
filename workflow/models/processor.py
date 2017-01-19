@@ -1,16 +1,19 @@
 # coding=utf-8
 import json
 
+import subprocess
 from django.db import models
 from basic import BasicModel
 from parameter import Parameter
 from io import InputChannel, OutputChannel
+from hub.settings import BASE_DIR, MEDIA_ROOT
 
 
 class Processor(BasicModel):
     name = models.CharField(max_length=140)
     algorithm_category_id = models.IntegerField(default=0)
     is_visualization = models.BooleanField(default=False)
+    visualization_category = models.CharField(max_length=40)
     exec_file = models.FileField(upload_to='JAR/', null=True)
     category = models.ForeignKey('ProcessorCategory', related_name='processors')
 
@@ -31,6 +34,7 @@ class Processor(BasicModel):
 
     def to_dict(self):
         # todo：这里可以使用Magic
+        # image = {}
         category = self.category.to_sequence()
         if category == '':
             return
@@ -44,22 +48,45 @@ class Processor(BasicModel):
             "outputs": [output_channel.to_dict() for output_channel in self.outputs.all()],
             "category": category,
             # "category": self.category.to_sequence()
+            # "image": image,
         }
         return result
 
     def to_json(self):
         return json.dumps(self.to_dict())
 
+    def runannotation(self, classname,jarpath):
+        #classname=property  jarpath=/home/spark/Sql.jar
+        cmd_header = "java -jar " + BASE_DIR + "/workflow/models/export_file/Annotation.jar"+" "+ classname+" " +jarpath
+        print cmd_header
+        proc = subprocess.Popen(cmd_header, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc.wait()
+        a=proc.stdout.read()
+        print a
+        attr={}
+        readjson = json.loads(a)
+        print readjson
+        self.is_visualization = readjson.get("is_visualization")
+        self.algorithm_category_id = readjson.get("ac_id")
+        #self.save()
+        attr["parameters"]=readjson.get("parameters")
+        attr["inputs"]=readjson.get("inputs")
+        attr["outputs"]=readjson.get("outputs")
+
+        return attr
+
     @classmethod
     def create_from_json_dict(cls, attributes, **kwargs):
         # print attributes['is_visualization']
-        processor = Processor(name=attributes['name'], exec_file=attributes['execFile'], is_visualization=attributes['is_visualization'], algorithm_category_id=attributes['ac_id'])
+
+        processor = Processor(name=attributes['name'], exec_file=attributes['execFile'])
         category_path = attributes['category']
         categorys = category_path.split(">")
         # print categorys
         parent = None
         for category in categorys:
-            child = ProcessorCategory.objects.get_or_create(parent=parent, name=Category.objects.get(category_id=int(category)).category_name,
+            child = ProcessorCategory.objects.get_or_create(parent=parent, name=Category.objects.get(
+                category_id=int(category)).category_name,
                                                             category=Category.objects.get(category_id=int(category)))
             # child = ProcessorCategory.objects.get_or_create(parent=parent, name=category)
             if child[1] == 1:
@@ -68,25 +95,35 @@ class Processor(BasicModel):
         # print categorys
         processor.category = parent
         # processor.exec_file = attributes['execFile']
+
+        #put the parameters where?
         processor.save()
+        classname = "property"
+        jarpath = "/home/spark/"+ processor.exec_file.name
+        print jarpath
+        dict=processor.runannotation(classname,jarpath)
+        attributes.update(dict)
+        processor.save()
+        print processor
+        print attributes
         rollback = []
         try:
             for parameter_attributes in attributes['parameters']:
-                if parameter_attributes['label'] == '':
-                    continue
+                # if parameter_attributes['label'] == '':
+                #     continue
                 # if parameter_attributes['parameterType'] == 'selection':
                 #     parameter_attributes['choices'] = parameter_attributes['description'].split(",")
                 a = Parameter.create_from_json_dict(parameter_attributes, processor=processor)
                 rollback.append(a)
             # print attributes
             for input_attributes in attributes['inputs']:
-                if input_attributes['name'] == '':
-                    continue
+                # if input_attributes['name'] == '':
+                #     continue
                 a = InputChannel.create_from_json_dict(input_attributes, processor=processor)
                 rollback.append(a)
             for output_attributes in attributes['outputs']:
-                if output_attributes['name'] == '':
-                    continue
+                # if output_attributes['name'] == '':
+                #     continue
                 a = OutputChannel.create_from_json_dict(output_attributes, processor=processor)
                 rollback.append(a)
             print categorys
@@ -130,12 +167,15 @@ class ProcessorCategory(BasicModel):
         catetory = self.category
         if catetory.is_hidden:
             return ''
+        # if not image.has_key(self.name) and catetory.picture_path.name is not None:
+        #     image[self.name] = MEDIA_ROOT + catetory.picture_path.name
         path = self.name
         parent = self.parent
         while parent != None:
             catetory = parent.category
             if catetory.is_hidden:
                 return ''
+
             path = parent.name + '>' + path
             parent = parent.parent
 
@@ -163,7 +203,7 @@ class Category(BasicModel):
     category_id = models.IntegerField()
     category_name = models.CharField(max_length=20)
     is_hidden = models.BooleanField(default=False)
-    picture_path = models.CharField(max_length=100, null=True)
+    picture_path = models.FileField(upload_to='Picture/', null=True)
     parent = models.ForeignKey('self', related_name='children', default=None, null=True)
 
     def to_dict(self):
@@ -171,7 +211,8 @@ class Category(BasicModel):
             "id": self.category_id,
             'name': self.category_name,
             "isHidden": self.is_hidden,
-            "children": [child.to_dict() for child in self.children.all() if child!= None]
+            "children": [child.to_dict() for child in self.children.all() if child!= None],
+            "picture": self.picture_path.name
         }
 
     @classmethod
@@ -179,20 +220,25 @@ class Category(BasicModel):
         assert 'parent' in kwargs.keys()
         parent = kwargs['parent']
         assert parent is not None
+        assert 'image' in kwargs.keys()
+        image = kwargs['image']
+        assert image is not None
 
         roll_back = []
-
-        category = Category.objects.get_or_create(category_id=attributes["id"])
+        # print attributes
+        category = Category.objects.get_or_create(category_id=int(attributes["id"]))
+        # print attributes
 
         if category[1] == 1:
             category[0].category_name=attributes["name"]
             category[0].is_hidden=attributes["isHidden"]
             category[0].parent=parent
+            category[0].picture_path = image
             category[0].save()
 
         try:
             for child in attributes["children"]:
-                a = Category.create_from_json_dict(child, parent=category[0])
+                a = Category.create_from_json_dict(child, parent=category[0], image=image)
                 roll_back.append(a)
         except Exception, e:
             category[0].delete()

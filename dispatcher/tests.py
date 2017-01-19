@@ -408,8 +408,8 @@ workflow1 = {
             ]
         }
 # Processor.create_from_json_dict(processor1)
-Workflow.create_from_json_dict(workflow1)
-# Processor.objects.get(id=27).delete()
+# Workflow.create_from_json_dict(workflow1)
+Processor.objects.get(id=31).delete()
 # import httplib
 # import json
 #

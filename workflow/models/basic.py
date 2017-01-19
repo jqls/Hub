@@ -23,7 +23,8 @@ class DataType(BasicModel):
 
 class Document(BasicModel):
     file_name = models.CharField(max_length=100)
-    file_path = models.CharField(max_length=100)
+    file_path = models.CharField(max_length=100, null=True, default=None)
+    document = models.FileField(upload_to='Document/', null=True)
 
     def to_dict(self):
         result = {
@@ -31,6 +32,15 @@ class Document(BasicModel):
             'file_name': self.file_name,
         }
         return result
+
+    @classmethod
+    def create_from_json_dict(cls, attributes, **kwargs):
+        document = Document.objects.get_or_create(file_name = attributes['name'], document=attributes['document'])
+        document[0].save()
+
+        return document[0]
+
+
 
 class Database(BasicModel):
     db_id = models.IntegerField()

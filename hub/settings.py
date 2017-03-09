@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'hub.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dispatcher_dev',
+        'NAME': 'dispatch_dev',
         'USER': 'root',
         'PASSWORD': 'asd123',
         'HOST': '10.5.0.224',
@@ -178,3 +178,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 MEDIA_ROOT = "/home/spark/"
 
 HDFS_DATA_ROOT = "/user/spark/DATA"
+
+MYSQL_CONNECTOR_JAR = "mysql-connector-java-5.1.39-bin.jar"
+
+ROOT_JAR = "/home/spark/JAR/"

@@ -409,7 +409,8 @@ workflow1 = {
         }
 # Processor.create_from_json_dict(processor1)
 # Workflow.create_from_json_dict(workflow1)
-Processor.objects.get(id=31).delete()
+for i in range(32, 34):
+    Processor.objects.get(id=i).delete()
 # import httplib
 # import json
 #

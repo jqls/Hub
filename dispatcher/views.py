@@ -81,7 +81,7 @@ def get_parameters_view(request, parameter):
                 obj = {}
                 obj['name'] = para.label
                 if para.label == 'filePath' or para.label == 'sql_list':
-                    obj['value'] = Document.objects.get(id=int(para.val)).file_path if para.label == 'filePath' else Database.objects.get(db_id=int(para.val)).db_name
+                    obj['value'] = Document.objects.get(id=int(para.val)).file_path if para.label == 'filePath' else para.val
                 else:
                     obj['value'] = para.val
                 info['parameters'].append(obj)
@@ -100,8 +100,8 @@ def get_inputs_view(request, parameter):
         if request.method == 'GET':
             paras = parameter.split('-')
             workflow_id, mission_id, processor_id, flow_id = paras[0], paras[1], paras[2], paras[3]
-            if int(workflow_id) == 15:
-                return HttpResponse(json.dumps(info), content_type='application/json')
+            # if int(workflow_id) == 15:
+            #     return HttpResponse(json.dumps(info), content_type='application/json')
             workflow = Workflow.objects.get(id=int(workflow_id))
             mission = workflow.mission_set.get(id=int(mission_id))
 
@@ -182,8 +182,11 @@ def visualization_view(request, parameter):
             path = "/user/spark/result_data/" + dir + "/" + file
             search_obj = None
             target_item = request.GET.get("target", None)
-            if category == 0 and target_item is not None:
-                search_obj = SearchItems(path, target_item, 1)
+            layer = request.GET.get("layer", None)
+            print target_item
+            if category == '0' and target_item is not None:
+                print target_item, layer
+                search_obj = SearchItems(path, target_item, layer)
             else:
                 search_obj = SearchItems(path)
             resultdata = search_obj.SearchFromAlgorithm(category)

@@ -65,7 +65,7 @@ def processor_runner(message):
     print message['next_proc']
     cmd_header = "sudo -u spark spark-submit "
 
-    cmd_header = cmd_header + " --master spark://hadoop2:7077 --class com.Main" + ' ' + settings.MEDIA_ROOT + Processor.objects.get(id=processor_id).exec_file.name
+    cmd_header = cmd_header + " --master spark://hadoop2:7077 --class com.Main " + "--jars " + settings.ROOT_JAR + settings.MYSQL_CONNECTOR_JAR + " --driver-class-path " + settings.ROOT_JAR + settings.MYSQL_CONNECTOR_JAR + ' ' + settings.MEDIA_ROOT + Processor.objects.get(id=processor_id).exec_file.name
     # cmd_header = cmd_header + " --master yarn --deploy-modecluster --class com.Main" + ' ' + settings.MEDIA_ROOT + Processor.objects.get(
     #     id=processor_id).exec_file.name
     # cmd_header = cmd_header + " " + jar
@@ -83,21 +83,24 @@ def processor_runner(message):
         flag = line.find("Connected to Spark cluster with app ID app-")
         if line.find("Exception") >= 0:
             error = True
+            update_status(workflow_id, int(message['flow_id']), int(mission_id), 2)
         if flag >= 0:
             start = line.find("app-")
             app_ID = line[start:].strip()
         if not line:
             break
-        # print line
+        print line
         with open("/home/spark/Log/"+para, 'a') as f:
             f.write(line)
     proc.wait()
 
     mot = monitor.SparkMonitor('10.5.0.223', '18080')
+    print app_ID
     ret = mot.appInfo(app_ID)
-    if ret and not error:
+    if (ret and not error) or (app_ID == '' and not error):
     # if appinfo['attempts']['status']:
         if message['next_proc'] == []:
+            print "--------------------------------"
             update_mission_status(int(message['workflow_id']), int(message['mission_id']), 3)
         for UUID in message['next_proc']:
             counter = Counter.objects.get(guid=UUID)

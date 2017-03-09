@@ -101,7 +101,7 @@ class Processor(BasicModel):
         classname = "property"
         jarpath = "/home/spark/"+ processor.exec_file.name
         print jarpath
-        dict=processor.runannotation(classname,jarpath)
+        dict=processor.runannotation(classname, jarpath)
         attributes.update(dict)
         processor.save()
         print processor
@@ -222,12 +222,12 @@ class Category(BasicModel):
         assert parent is not None
         assert 'image' in kwargs.keys()
         image = kwargs['image']
-        assert image is not None
+        # assert image is not None
 
         roll_back = []
-        # print attributes
+        print int(attributes["id"])
         category = Category.objects.get_or_create(category_id=int(attributes["id"]))
-        # print attributes
+        print attributes
 
         if category[1] == 1:
             category[0].category_name=attributes["name"]
@@ -241,7 +241,8 @@ class Category(BasicModel):
                 a = Category.create_from_json_dict(child, parent=category[0], image=image)
                 roll_back.append(a)
         except Exception, e:
-            category[0].delete()
+            if category[0].category_id != -1:
+                category[0].delete()
             for item in roll_back:
                 item.delete()
             raise e

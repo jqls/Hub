@@ -11,10 +11,10 @@ class SearchItems(object):
         self.cmd_hdfs_cat = "sudo -u spark hdfs dfs -cat "
 
     def Visualiztion_Category(self, category):
-        if category == 0 and self.item is not None:
+        if category == '0' and self.item is not None:
             cmd_header = "sudo -u spark spark-submit --master local[12] --class com.Main "
             return cmd_header + "/home/spark/JAR/SearchItems.jar " + self.item + " " + self.file + " " + self.layer
-        elif category == 1:
+        elif category == '1':
             return self.cmd_hdfs_cat + self.file
         else:
             return self.cmd_hdfs_cat + self.file

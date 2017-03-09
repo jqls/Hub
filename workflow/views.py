@@ -114,13 +114,13 @@ def processor_category_rest(request, parameter):
     if request.method == "GET":
 
         info = Category.objects.get(category_id=-1).to_dict()
+        print info
         return HttpResponse(content=json.dumps(info), content_type='application/json')
 
     elif request.method == "POST":
         try:
-            # print parameter
+            print parameter
             attributes_json = json.loads(parameter)
-
             attributes_json['image'] = request.FILES.get('image', None)
             # print request.FILES.get('image', None).name
             print attributes_json
@@ -146,7 +146,8 @@ def processor_category_delete(request):
             target = Category.objects.get(category_id=int(request.body))
             paths = []
             children = []
-            paths.append(MEDIA_ROOT + target.picture_path.name)
+            if target.picture_path.name != "":
+                paths.append(MEDIA_ROOT + target.picture_path.name)
             for child in target.children.all():
                 children.append(child)
                 paths.append(MEDIA_ROOT + child.picture_path.name)
@@ -157,7 +158,7 @@ def processor_category_delete(request):
                     paths.append(MEDIA_ROOT + child.picture_path.name)
             for path in paths:
                 remove_item(path)
-
+            print request.body
             target.delete()
             # ProcessorCategory.objects.get(category_id=attributes_json["name"]).delete()
         except Exception, e:
@@ -222,9 +223,9 @@ def mysql_rest(attributes, operation):
                 print r[0]
         cur.close()
         conn.close()
-    except Exception, e:
-        print e.message
-        return json.dumps(e.message)
+    except pymysql.Error, e:
+        print e.args[0], e.args[1]
+        return json.dumps([e.message])
     return data
 
 @csrf_exempt

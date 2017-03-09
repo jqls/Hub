@@ -150,6 +150,7 @@ class Parameter(BasicModel):
                 parameter_input_object=parameter_input,
                 processor=processor
             )
+            print parameter
             parameter.save()
         except Exception, e:
             if parameter_input is not None:

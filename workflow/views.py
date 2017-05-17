@@ -146,16 +146,31 @@ def processor_category_delete(request):
             target = Category.objects.get(category_id=int(request.body))
             paths = []
             children = []
-            if target.picture_path.name != "":
+
+            def getProcessPaths(target, paths):
+                category = target.ConfiguredCategory.all()
+                for processors in category:
+                    for processor in processors.processors.all():
+                        paths.append(MEDIA_ROOT + str(processor.exec_file))
+
+            getProcessPaths(target, paths)
+            if target.picture_path.name:
                 paths.append(MEDIA_ROOT + target.picture_path.name)
+
             for child in target.children.all():
                 children.append(child)
-                paths.append(MEDIA_ROOT + child.picture_path.name)
+                getProcessPaths(child, paths)
+                if child.picture_path.name:
+                    paths.append(MEDIA_ROOT + child.picture_path.name)
+
             while children != []:
                 curr = children.pop()
                 for child in curr.children.all():
                     children.append(child)
-                    paths.append(MEDIA_ROOT + child.picture_path.name)
+                    getProcessPaths(child, paths)
+                    if child.picture_path.name:
+                        paths.append(MEDIA_ROOT + child.picture_path.name)
+
             for path in paths:
                 remove_item(path)
             print request.body

@@ -15,10 +15,17 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
+# from rest_framework import routers
+# from restapi import views
+
+# router = routers.DefaultRouter()
+# router.register(r'Mission/', views.MissionViewSet)
 
 urlpatterns = [
     url(r'^grappelli/', include('grappelli.urls')),  # grappelli URLS
     url(r'^admin/', admin.site.urls),
     url(r'^dispatcher/', include('dispatcher.urls')),
     url(r'^workflow/', include('workflow.urls')),
+    # url(r'^v1/', include('rest_framework.urls', namespace='rest_framework'))
+    url(r'^v1/', include('restapi.urls'))
 ]

@@ -9,10 +9,12 @@ from io import InputChannel, OutputChannel
 from hub.settings import BASE_DIR, MEDIA_ROOT
 
 
+
 class Processor(BasicModel):
     name = models.CharField(max_length=140)
     algorithm_category_id = models.IntegerField(default=0)
     is_visualization = models.BooleanField(default=False)
+    is_local = models.BooleanField(default=True)
     visualization_category = models.CharField(max_length=40)
     exec_file = models.FileField(upload_to='JAR/', null=True)
     category = models.ForeignKey('ProcessorCategory', related_name='processors')
@@ -57,17 +59,20 @@ class Processor(BasicModel):
 
     def runannotation(self, classname,jarpath):
         #classname=property  jarpath=/home/spark/Sql.jar
-        cmd_header = "java -jar " + BASE_DIR + "/workflow/models/export_file/Annotation.jar"+" "+ classname+" " +jarpath
+        cmd_header = "java -jar " + BASE_DIR + "/workflow/models/export_file/Annotation_new.jar"+" "+ classname+" " +jarpath
         print cmd_header
         proc = subprocess.Popen(cmd_header, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         proc.wait()
         a=proc.stdout.read()
-        print a
+        # print a
+        if a == "404":
+            return False
         attr={}
         readjson = json.loads(a)
         print readjson
         self.is_visualization = readjson.get("is_visualization")
-        self.algorithm_category_id = readjson.get("ac_id")
+        self.algorithm_category_id = readjson.get("algorithm_category")
+        self.is_local = bool(readjson.get("is_local"))
         #self.save()
         attr["parameters"]=readjson.get("parameters")
         attr["inputs"]=readjson.get("inputs")
@@ -98,14 +103,20 @@ class Processor(BasicModel):
 
         #put the parameters where?
         processor.save()
-        classname = "property"
+        classname = "com.property"
         jarpath = "/home/spark/"+ processor.exec_file.name
-        print jarpath
+        # print jarpath
         dict=processor.runannotation(classname, jarpath)
+        if dict == False:
+            raise Exception("Not Found Property File")
+        # print dict
         attributes.update(dict)
-        processor.save()
-        print processor
-        print attributes
+        try:
+            processor.save()
+        except Exception, e:
+            print e
+        # print processor
+        # print attributes
         rollback = []
         try:
             for parameter_attributes in attributes['parameters']:
@@ -126,14 +137,14 @@ class Processor(BasicModel):
                 #     continue
                 a = OutputChannel.create_from_json_dict(output_attributes, processor=processor)
                 rollback.append(a)
-            print categorys
+            # print categorys
         except Exception, e:
             processor.delete()
             for item in rollback:
                 item.delete()
             raise e
         # processor.delete()
-        print attributes
+        # print attributes
         return processor
 
 

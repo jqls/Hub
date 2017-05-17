@@ -41,6 +41,8 @@ def submit_mission(message):
                                 outputs.append(i)
                                 break
                 print UUID
+                print {'workflow_id':message['workflow_id'], 'mission_id':message['mission_id'],
+                                                  'processor_id':processor_id, 'next_proc':outputs, 'uuid':UUID, 'flow_id':uuid2flowid[UUID]}
                 Channel('processor_runner').send({'workflow_id':message['workflow_id'], 'mission_id':message['mission_id'],
                                                   'processor_id':processor_id, 'next_proc':outputs, 'uuid':UUID, 'flow_id':uuid2flowid[UUID]})
                 uuid2flowid.pop(UUID)
@@ -50,6 +52,9 @@ def submit_mission(message):
                 for item in rollback:
                     item.delete()
                 return
+    while Mission.objects.get(id=int(message['mission_id']), workflow_id=(message['workflow_id'])).status <= 1:
+        time.sleep(1)
+    print "finish!!!!!!!"
     for item in rollback:
         item.delete()
 
@@ -58,6 +63,15 @@ def submit_mission(message):
     # Channel('counter').send({'uuid': uid.hex})
 
 def processor_runner(message):
+    print message
+    processor_id = int(message['processor_id'])
+    print processor_id
+    if not Processor.objects.get(id=processor_id).is_local:
+        processor2spark(message)
+    else:
+        processor2local(message)
+
+def processor2spark(message):
     workflow_id = int(message['workflow_id'])
     mission_id = message['mission_id']
     processor_id = message['processor_id']
@@ -65,7 +79,8 @@ def processor_runner(message):
     print message['next_proc']
     cmd_header = "sudo -u spark spark-submit "
 
-    cmd_header = cmd_header + " --master spark://hadoop2:7077 --class com.Main " + "--jars " + settings.ROOT_JAR + settings.MYSQL_CONNECTOR_JAR + " --driver-class-path " + settings.ROOT_JAR + settings.MYSQL_CONNECTOR_JAR + ' ' + settings.MEDIA_ROOT + Processor.objects.get(id=processor_id).exec_file.name
+    cmd_header = cmd_header + " --master spark://hadoop2:7077 --class com.Main " + "--jars " + settings.ROOT_JAR + settings.MYSQL_CONNECTOR_JAR + " --driver-class-path " + settings.ROOT_JAR + settings.MYSQL_CONNECTOR_JAR + ' ' + settings.MEDIA_ROOT + Processor.objects.get(
+        id=processor_id).exec_file.name
     # cmd_header = cmd_header + " --master yarn --deploy-modecluster --class com.Main" + ' ' + settings.MEDIA_ROOT + Processor.objects.get(
     #     id=processor_id).exec_file.name
     # cmd_header = cmd_header + " " + jar
@@ -90,7 +105,7 @@ def processor_runner(message):
         if not line:
             break
         print line
-        with open("/home/spark/Log/"+para, 'a') as f:
+        with open("/home/spark/Log/" + para, 'a') as f:
             f.write(line)
     proc.wait()
 
@@ -98,7 +113,7 @@ def processor_runner(message):
     print app_ID
     ret = mot.appInfo(app_ID)
     if (ret and not error) or (app_ID == '' and not error):
-    # if appinfo['attempts']['status']:
+        # if appinfo['attempts']['status']:
         if message['next_proc'] == []:
             print "--------------------------------"
             update_mission_status(int(message['workflow_id']), int(message['mission_id']), 3)
@@ -116,6 +131,50 @@ def processor_runner(message):
         update_status(workflow_id, int(message['flow_id']), int(mission_id), 2)
 
 
+def processor2local(message):
+    processor_id = message['processor_id']
+    # print workflow_id
+    file_name = settings.MEDIA_ROOT + str(Processor.objects.get(id=processor_id).exec_file.name)
+    cmd_header = ""
+    if file_name.endswith(".jar"):
+        cmd_header = "java -Djava.ext.dirs=" + settings.MEDIA_ROOT + "JAR/LIB/ -jar " + file_name
+    elif file_name.endswith(".py"):
+        cmd_header = "python " + file_name
+    elif file_name.endswith(".c"):
+        cmd_header = "gcc " + file_name
+    para = str(int(message['workflow_id'])) + "-" + str(message['mission_id']) + "-" + str(message['processor_id']) + "-" + str(message["flow_id"])
+    cmd = cmd_header + " " + para
+    print cmd
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = proc.communicate()
+    if err:
+        with open("/home/spark/Log/"+para, 'w') as f:
+            print err
+            f.write(err)
+    # print "finish!!!"
+    # print err
+
+    def is_error(console):
+        return True if console.find("Exception") >= 0 else False
+
+    if not is_error(err):
+        if message['next_proc'] == []:
+            print "--------------------------------"
+            update_mission_status(int(message['workflow_id']), int(message['mission_id']), 3)
+        for UUID in message['next_proc']:
+            counter = Counter.objects.get(guid=UUID)
+            counter.counter = counter.counter + 1
+            counter.save()
+        update_status(int(message['workflow_id']), int(message['flow_id']), int(message['mission_id']), 3)
+    else:
+        print message['uuid']
+        counter = Counter.objects.get(guid=message['uuid'])
+        counter.counter = -1
+        counter.save()
+
+        update_status(int(message['workflow_id']), int(message['flow_id']), int(message['mission_id']), 2)
+        if message['next_proc'] == []:
+            update_mission_status(int(message['workflow_id']), int(message['mission_id']), 2)
 
 def update_status(workflow_id, flow_id, mission_id, stat):
     workflow = Workflow.objects.get(id=workflow_id)
@@ -155,3 +214,4 @@ def ws_disconnect(message):
     message.reply_channel.send({
         "text": "OK"
     })
+

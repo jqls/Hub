@@ -1,14 +1,17 @@
 # coding=utf-8
 import json
-
+import subprocess
 from channels.channel import Channel
 from django.forms.models import model_to_dict
 from django.http.response import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
-from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, ConfiguredProcessor, Processor, InputChannel, OutputChannel, ConfiguredProcessorStatus, Document, Database
+from models import Mission, Workflow, ProcessorOutputs, ConfiguredProcessorIO, ProcessorInputs, ConfiguredParameter, \
+    ConfiguredProcessor, Processor, InputChannel, OutputChannel, ConfiguredProcessorStatus, Document, Database, Visualization
 from datetime import datetime
 from django.views.decorators.csrf import csrf_exempt
 from SearchItems import SearchItems
+from hub import settings
+
 
 def byteify(input):
     if isinstance(input, dict):
@@ -175,21 +178,60 @@ def visualization_view(request, parameter):
 
             # if int(line_num) == 0:
             #     line_num = 1000
+            def visualization_local(parameter):
+                path = ""
+                paras = parameter.split("-")
+                workflow_id, mission_id, processor_id, flow_id, port_id, category = paras[0], paras[1], paras[2], paras[
+                    3], paras[4], paras[5]
+                filePaths = ConfiguredProcessor.objects.get(workflow=int(workflow_id),
+                                                            meta_processor_id=int(processor_id)) \
+                    .configuredprocessorio_set.all().get(mission_id=int(mission_id), processorID=int(processor_id),
+                                                         configured_processor_id=int(flow_id)) \
+                    .processoroutputs_set.all()
+                for file in filePaths:
+                    path = file.path
+                search_obj = SearchItems(path[path.find(":") + 1:])
+
+                return search_obj.SearchFromLocal()
+
+            def visualization_spark(parameter):
+                path = ""
+                paras = parameter.split("-")
+                workflow_id, mission_id, processor_id, flow_id, port_id, category = paras[0], paras[1], paras[2], paras[
+                    3], paras[4], paras[5]
+
+                dir = workflow_id + "-" + mission_id
+                file = "-".join(paras2) + "-" + OutputChannel.objects.get(id=int(port_id)).name + ".text"
+                path = "/user/spark/result_data/" + dir + "/" + file
+                search_obj = None
+                target_item = request.GET.get("target", None)
+                layer = request.GET.get("layer", None)
+                print target_item
+                if category == '0' and target_item is not None:
+                    print target_item, layer
+                    search_obj = SearchItems(path, target_item, layer)
+                else:
+                    search_obj = SearchItems(path)
+                return search_obj.SearchFromAlgorithm(category)
 
             resultdata = []
-            dir = workflow_id + "-" + mission_id
-            file = "-".join(paras2) + "-" + OutputChannel.objects.get(id=int(port_id)).name + ".text"
-            path = "/user/spark/result_data/" + dir + "/" + file
-            search_obj = None
-            target_item = request.GET.get("target", None)
-            layer = request.GET.get("layer", None)
-            print target_item
-            if category == '0' and target_item is not None:
-                print target_item, layer
-                search_obj = SearchItems(path, target_item, layer)
+            if not Processor.objects.get(id=int(processor_id)).is_local:
+                resultdata = visualization_spark(parameter)
             else:
-                search_obj = SearchItems(path)
-            resultdata = search_obj.SearchFromAlgorithm(category)
+                resultdata = visualization_local(parameter)
+            # dir = workflow_id + "-" + mission_id
+            # file = "-".join(paras2) + "-" + OutputChannel.objects.get(id=int(port_id)).name + ".text"
+            # path = "/user/spark/result_data/" + dir + "/" + file
+            # search_obj = None
+            # target_item = request.GET.get("target", None)
+            # layer = request.GET.get("layer", None)
+            # print target_item
+            # if category == '0' and target_item is not None:
+            #     print target_item, layer
+            #     search_obj = SearchItems(path, target_item, layer)
+            # else:
+            #     search_obj = SearchItems(path)
+            # resultdata = search_obj.SearchFromAlgorithm(category)
             # cmd_header = "sudo -u spark hdfs dfs -cat " + path
             # proc = subprocess.Popen(cmd_header, shell=True, stdout=subprocess.PIPE, stderr=None)
             # num = 0
@@ -235,3 +277,37 @@ def processor_status_view(request, parameter):
     dict['message'] = info
 
     return HttpResponse(json.dumps(dict))
+
+@csrf_exempt
+def customVisualizaion(request):
+    if request.method == "POST":
+        try:
+            attributes = {}
+            print attributes
+            # attributes['is_visualization'] = False if attributes['is_visualization'] == '0' else True
+            # print attributes
+            attributes['execFile'] = request.FILES.get('file', None)
+            print request.FILES.get('file', None).name
+            attributes['fileName'] = attributes['execFile'].name
+            # print info
+            pk = Visualization.create_from_json_dict(attributes)
+            def executeFile(pk):
+                file_name = settings.MEDIA_ROOT + str(Visualization.objects.get(id=pk).path.name)
+                cmd_header = ""
+                if file_name.endswith(".jar"):
+                    cmd_header = "java -Djava.ext.dirs=" + settings.MEDIA_ROOT + "JAR/LIB/ -jar " + file_name
+                elif file_name.endswith(".py"):
+                    cmd_header = "python " + file_name
+                elif file_name.endswith(".c"):
+                    cmd_header = "gcc " + file_name
+                proc = subprocess.Popen(cmd_header, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = proc.communicate()
+                if err:
+                    return HttpResponse(err)
+                return HttpResponse("OK", status=200)
+
+            response = executeFile(pk)
+            return response
+        except Exception, e:
+            print e.message
+            return HttpResponseBadRequest(e.message)

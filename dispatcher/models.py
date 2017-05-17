@@ -10,8 +10,8 @@ from workflow.models import *
 
 
 class Mission(models.Model):
-    startDate = models.DateTimeField(default=None)
-    endDate = models.DateTimeField(default=None)
+    startDate = models.DateTimeField(default=None, null=True)
+    endDate = models.DateTimeField(default=None, null=True)
     status = models.IntegerField(default=0)
     workflow = models.ForeignKey(Workflow, null=True)
 
@@ -57,3 +57,20 @@ class ProcessorOutputs(models.Model):
     name = models.CharField(max_length=100)
     path = models.CharField(max_length=200, null=True)
     processor = models.ForeignKey(ConfiguredProcessorIO, null=True)
+
+class Visualization(models.Model):
+    fileName = models.CharField(max_length=100)
+    path = models.FileField(upload_to='visualizationFile/', null=True)
+    picturePath = models.CharField(max_length=200, null=True)
+
+    @classmethod
+    def create_from_json_dict(cls, attributes, **kwargs):
+        visualization = Visualization(fileName=attributes['fileName'], path=attributes['execFile'])
+
+        # put the parameters where?
+        visualization.save()
+        return visualization.id
+
+class Picture(models.Model):
+    mission = models.ForeignKey(Mission, null=True)
+    path = models.CharField(max_length=200)

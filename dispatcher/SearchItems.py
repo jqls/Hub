@@ -9,6 +9,7 @@ class SearchItems(object):
         self.layer = layer
         self.num = num
         self.cmd_hdfs_cat = "sudo -u spark hdfs dfs -cat "
+        self.cmd_local_cat = "cat "
 
     def Visualiztion_Category(self, category):
         if category == '0' and self.item is not None:
@@ -18,6 +19,20 @@ class SearchItems(object):
             return self.cmd_hdfs_cat + self.file
         else:
             return self.cmd_hdfs_cat + self.file
+
+    def SearchFromLocal(self):
+        items = []
+        cmd = self.cmd_local_cat + self.file
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=None)
+        while True:
+            line = proc.stdout.readline()
+            # print line
+            if len(items) > self.num:
+                break
+            if line == "":
+                break
+            items.append(line.strip())
+        return items
 
     def SearchFromAlgorithm(self, category):
         items = []

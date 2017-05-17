@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'channels',
     'dispatcher',
     'workflow',
@@ -84,11 +85,19 @@ WSGI_APPLICATION = 'hub.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dispatch_dev',
+        'NAME': 'dispatcher_dev',
         'USER': 'root',
         'PASSWORD': 'asd123',
         'HOST': '10.5.0.224',
         'PORT': '3306'
+    },
+    'oracle': {
+        'ENGINE': 'django.db.backends.oracle',
+        'NAME': '',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': ''
     }
 }
 
@@ -132,13 +141,14 @@ STATIC_URL = '/static/'
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "asgi_redis.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [
-                ("10.5.0.224", 6379),
-                #("192.168.99.100", 6379),
-            ]
-        },
+        # "BACKEND": "asgi_redis.RedisChannelLayer",
+        # "CONFIG": {
+        #     "hosts": [
+        #         ("10.5.0.224", 6379),
+        #         #("192.168.99.100", 6379),
+        #     ]
+        # },
+        "BACKEND": "asgiref.inmemory.ChannelLayer",
         "ROUTING": "hub.routing.channel_routing",
     },
 }
@@ -169,6 +179,13 @@ LOGGING = {
             'propagate': True,
         },
     },
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    ),
+    'PAGE_SIZE': 10
 }
 
 CELERY_BROKER_URL = 'amqp://admin:asd123@10.5.0.224:5672//'

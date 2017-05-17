@@ -2,7 +2,7 @@
 import os
 
 from django.test import TestCase
-from django.urls import reverse
+# from django.urls import reverse
 import json
 from workflow.models import Processor, Workflow
 #
@@ -409,8 +409,9 @@ workflow1 = {
         }
 # Processor.create_from_json_dict(processor1)
 # Workflow.create_from_json_dict(workflow1)
-for i in range(32, 34):
-    Processor.objects.get(id=i).delete()
+# for i in range(32, 34):
+#     Processor.objects.get(id=i).delete()
+Workflow.objects.get(id=27).delete()
 # import httplib
 # import json
 #
